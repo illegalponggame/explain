@@ -41,6 +41,31 @@
     font-size: .95rem;
   }
   .coin-icon { font-size: 1.2rem; }
+  .achievements-open {
+    position:absolute; top:48px; right:0; z-index:5;
+    padding:8px 12px; border:2px solid #aaa; background:#171717;
+    color:#fff; font-weight:900; box-shadow:3px 3px 0 #333;
+  }
+  .achievement-modal {
+    position:fixed; inset:0; z-index:1000; display:flex; align-items:center;
+    justify-content:center; padding:18px; background:rgba(0,0,0,.82);
+  }
+  .achievement-modal.hidden { display:none; }
+  .achievement-card {
+    width:min(100%,560px); max-height:85vh; overflow:auto; border:3px solid #888;
+    background:#101010; padding:22px; box-shadow:8px 8px 0 #333; position:relative;
+  }
+  .achievement-row { display:flex; align-items:center; gap:14px; border:2px solid #555; padding:14px; background:#1b1b1b; }
+  .achievement-icon { font-size:2.4rem; filter:grayscale(1); }
+  .achievement-row.unlocked { border-color:#fff; background:#242424; }
+  .achievement-row.unlocked .achievement-icon { filter:none; }
+  .achievement-description { color:#bbb; line-height:1.5; font-size:.9rem; }
+  #achievementConfetti { position:fixed; inset:0; width:100%; height:100%; z-index:1100; pointer-events:none; }
+  @media (max-width:620px) {
+    .coin-display { position:static; width:fit-content; margin:0 0 12px auto; }
+    .achievements-open { position:static; display:block; margin:0 0 12px auto; }
+    header { padding-top:0; }
+  }
   #coinCount { min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; }
   @media (max-width: 620px) {
     .coin-display { position: static; width: fit-content; margin: 0 0 12px auto; }
@@ -338,6 +363,23 @@
 <body>
 <main class="app">
   <div class="coin-display" aria-label="Your coins"><span class="coin-icon">🪙</span><span>COINS</span><span id="coinCount">0</span></div>
+  <button id="achievementsOpenBtn" class="achievements-open" type="button" aria-haspopup="dialog" aria-expanded="false">🏆 Achievements</button>
+  <div id="achievementsModal" class="achievement-modal hidden" role="dialog" aria-modal="true" aria-labelledby="achievementsTitle">
+    <section class="achievement-card">
+      <button id="achievementsCloseBtn" type="button" aria-label="Close achievements" style="float:right">✕ Close</button>
+      <h2 id="achievementsTitle">🏆 Achievements</h2>
+      <p style="color:#aaa">Complete challenges to collect achievements.</p>
+      <div id="impossibleAchievementRow" class="achievement-row">
+        <div class="achievement-icon">🏆</div>
+        <div>
+          <strong>COMPLETED THE IMPOSSIBLE</strong>
+          <div id="impossibleAchievementState" style="margin:5px 0;color:#ffcf55;font-weight:900">🔒 LOCKED</div>
+          <div class="achievement-description">To unlock this achievement, beat Medium Bot in a First to 3 match while having the Laggy Paddle accessory equipped on your left paddle.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <canvas id="achievementConfetti" aria-hidden="true"></canvas>
   <header>
     <div class="eyebrow">Retro • Neon • Arcade</div>
     <h1>ILLEGAL <span>PONG</span></h1>
@@ -1246,12 +1288,69 @@
     }
   }
 
+  const IMPOSSIBLE_ACHIEVEMENT_KEY = 'illegalPongAchievementCompletedImpossibleV1';
+  let completedImpossible = false;
+  try { completedImpossible = localStorage.getItem(IMPOSSIBLE_ACHIEVEMENT_KEY) === 'unlocked'; } catch (_) {}
+  const achievementsOpenBtn = document.getElementById('achievementsOpenBtn');
+  const achievementsModal = document.getElementById('achievementsModal');
+  const achievementsCloseBtn = document.getElementById('achievementsCloseBtn');
+  const impossibleAchievementRow = document.getElementById('impossibleAchievementRow');
+  const impossibleAchievementState = document.getElementById('impossibleAchievementState');
+  const achievementConfetti = document.getElementById('achievementConfetti');
+  function refreshAchievementUI() {
+    if (impossibleAchievementState) impossibleAchievementState.textContent = completedImpossible ? '✓ UNLOCKED' : '🔒 LOCKED';
+    if (impossibleAchievementRow) impossibleAchievementRow.classList.toggle('unlocked', completedImpossible);
+  }
+  function openAchievements() {
+    if (achievementsModal) achievementsModal.classList.remove('hidden');
+    if (achievementsOpenBtn) achievementsOpenBtn.setAttribute('aria-expanded', 'true');
+    refreshAchievementUI();
+  }
+  function closeAchievements() {
+    if (achievementsModal) achievementsModal.classList.add('hidden');
+    if (achievementsOpenBtn) achievementsOpenBtn.setAttribute('aria-expanded', 'false');
+  }
+  if (achievementsOpenBtn) achievementsOpenBtn.addEventListener('click', openAchievements);
+  if (achievementsCloseBtn) achievementsCloseBtn.addEventListener('click', closeAchievements);
+  if (achievementsModal) achievementsModal.addEventListener('click', event => { if (event.target === achievementsModal) closeAchievements(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAchievements(); });
+  refreshAchievementUI();
+
+  function celebrateAchievement() {
+    if (!achievementConfetti) return;
+    const canvas = achievementConfetti;
+    const ctx = canvas.getContext('2d');
+    const resize = () => { canvas.width = window.innerWidth * (window.devicePixelRatio || 1); canvas.height = window.innerHeight * (window.devicePixelRatio || 1); ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0); };
+    resize();
+    const pieces = Array.from({length:180}, () => ({x:Math.random()*window.innerWidth,y:-20-Math.random()*window.innerHeight,vx:(Math.random()-.5)*5,vy:2+Math.random()*6,size:4+Math.random()*8,rot:Math.random()*6.28,spin:(Math.random()-.5)*.2,hue:Math.floor(Math.random()*360)}));
+    const started = performance.now();
+    function frame(now) {
+      ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+      for (const c of pieces) { c.x+=c.vx; c.y+=c.vy; c.rot+=c.spin; ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(c.rot); ctx.fillStyle=`hsl(${c.hue} 95% 60%)`; ctx.fillRect(-c.size/2,-c.size/2,c.size,c.size*1.6); ctx.restore(); }
+      if (now-started < 5200) requestAnimationFrame(frame); else ctx.clearRect(0,0,canvas.width,canvas.height);
+    }
+    window.addEventListener('resize', resize, {once:true});
+    requestAnimationFrame(frame);
+  }
+  function checkImpossibleAchievement(winner) {
+    const qualifies = winner === 'Player 1' && mode === 'cpu' && ui.difficulty.value === 'medium' && Number(ui.winScore.value) === 3 && equippedAccessory.left === 'laggy';
+    if (!qualifies || completedImpossible) return false;
+    completedImpossible = true;
+    try { localStorage.setItem(IMPOSSIBLE_ACHIEVEMENT_KEY, 'unlocked'); } catch (_) {}
+    refreshAchievementUI();
+    celebrateAchievement();
+    showOverlay('🏆 COMPLETED THE IMPOSSIBLE! 🏆', 'Achievement unlocked! You beat Medium Bot first to 3 with the Laggy Paddle equipped! 🎉', 'Awesome!');
+    ui.status.textContent = '🏆 ACHIEVEMENT UNLOCKED: COMPLETED THE IMPOSSIBLE!';
+    return true;
+  }
+
   function finishGame(winner) {
     running = false;
     paused = false;
     gameOver = true;
     const coinReward = winner === 'Player 1' ? addCoinsForWin() : 0;
     const rewardText = coinReward > 0 ? ` You earned ${coinReward} coins!` : '';
+    if (checkImpossibleAchievement(winner)) return;
 
     showOverlay(
       `${winner} wins! 🎉`,
@@ -2636,6 +2735,9 @@
       ui.rightName.textContent = `CPU (${({ easy: 'EASY', medium: 'MEDIUM', hard: 'HARD', impossible: 'FINAL BOSS' })[ui.difficulty.value] || 'FINAL BOSS'})`;
       ui.status.textContent =
         `${labels[ui.difficulty.value]} difficulty selected.`;
+      // Switching bots always begins a fresh match with both scores at zero.
+      resetGame(false);
+      ui.status.textContent = `${labels[ui.difficulty.value]} difficulty selected — scores reset to 0–0.`;
     }
   });
 

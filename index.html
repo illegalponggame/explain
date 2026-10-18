@@ -369,6 +369,15 @@
         <option value="none">None</option><option value="pumpkin">Halloween Pumpkin Hat</option><option value="cheese">Cheese Hat</option><option value="redNikes">Red Nikes</option><option value="laggy">Laggy Paddle</option><option value="smiley">Black Smiley Face</option><option value="yellowNikes">Yellow Nikes</option>
       </select>
       <p id="accessoryShopStatus" role="status" aria-live="polite" style="color:#ddd;margin:8px 0 0">Each accessory costs 35 coins. Press the purchase button beside a locked accessory. Once bought, you can use it on either paddle.</p>
+      <hr style="border:0;border-top:1px solid #555;margin:16px 0">
+      <h3 style="margin:0 0 8px">👑 Owner Code</h3>
+      <p>Enter the owner code to unlock infinite coins and free accessories on this browser.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <label class="sr-only" for="ownerCodeInput">Owner code</label>
+        <input id="ownerCodeInput" type="password" inputmode="numeric" autocomplete="off" placeholder="Enter owner code" style="flex:1;min-width:160px;color:#fff;background:#191919;border:1px solid #777;padding:10px;font:inherit">
+        <button id="ownerCodeBtn" class="primary" type="button">Unlock</button>
+      </div>
+      <p id="ownerCodeStatus" role="status" aria-live="polite" style="color:#aaa;margin:8px 0 0">Owner mode is locked.</p>
       <audio id="musicAudio" preload="none" loop style="display:block;width:100%;max-width:560px;margin-top:12px">
         <source src="https://doors-but-bad.fandom.com/wiki/Special:Redirect/file/Lift_ReJam.mp3" type="audio/mpeg">
       </audio>
@@ -937,6 +946,33 @@
   try { coins = Math.max(0, Number(localStorage.getItem(COIN_STORAGE_KEY)) || 0); } catch (_) {}
   const coinCountEl = document.getElementById('coinCount');
   const accessoryShopStatus = document.getElementById('accessoryShopStatus');
+  const ownerCodeInput = document.getElementById('ownerCodeInput');
+  const ownerCodeBtn = document.getElementById('ownerCodeBtn');
+  const ownerCodeStatus = document.getElementById('ownerCodeStatus');
+  const OWNER_CODE = '202013';
+  const OWNER_MODE_KEY = 'illegalPongOwnerModeV1';
+  let ownerMode = false;
+  try { ownerMode = localStorage.getItem(OWNER_MODE_KEY) === 'unlocked'; } catch (_) {}
+  function unlockOwnerMode() {
+    if (ownerMode) {
+      if (ownerCodeStatus) ownerCodeStatus.textContent = '👑 Owner mode is already unlocked on this browser.';
+      return;
+    }
+    if (ownerCodeInput && ownerCodeInput.value === OWNER_CODE) {
+      ownerMode = true;
+      try { localStorage.setItem(OWNER_MODE_KEY, 'unlocked'); } catch (_) {}
+      if (ownerCodeInput) ownerCodeInput.value = '';
+      if (ownerCodeStatus) ownerCodeStatus.textContent = '👑 OWNER MODE UNLOCKED — infinite coins and free accessories!';
+      updateCoinDisplay();
+      refreshAccessoryOptions();
+    } else if (ownerCodeStatus) {
+      ownerCodeStatus.textContent = 'Incorrect code. Try again.';
+    }
+  }
+  if (ownerCodeBtn) ownerCodeBtn.addEventListener('click', unlockOwnerMode);
+  if (ownerCodeInput) ownerCodeInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') unlockOwnerMode();
+  });
   const ACCESSORY_COST = 35;
   const ACCESSORIES = {
     pumpkin: 'Halloween Pumpkin Hat',
@@ -957,7 +993,7 @@
     right: rightAccessory ? rightAccessory.value : 'none'
   };
   function updateCoinDisplay() {
-    if (coinCountEl) coinCountEl.textContent = String(coins);
+    if (coinCountEl) coinCountEl.textContent = ownerMode ? '∞' : String(coins);
   }
   function saveOwnedAccessories() {
     try { localStorage.setItem(ACCESSORY_STORAGE_KEY, JSON.stringify(ownedAccessories)); } catch (_) {}
@@ -978,7 +1014,7 @@
         const buy = document.createElement('button');
         buy.type = 'button';
         buy.style.cssText = 'font-size:11px;padding:5px 8px;white-space:nowrap;';
-        buy.textContent = `BUY · ${ACCESSORY_COST} 🪙`;
+        buy.textContent = ownerMode ? 'UNLOCK FREE 👑' : `BUY · ${ACCESSORY_COST} 🪙`;
         buy.addEventListener('click', () => purchaseAccessory(key));
         row.appendChild(buy);
       } else {
@@ -1009,7 +1045,7 @@
   }
   function purchaseAccessory(key) {
     if (!ACCESSORIES[key] || ownedAccessories[key]) return;
-    if (coins < ACCESSORY_COST) {
+    if (!ownerMode && coins < ACCESSORY_COST) {
       if (accessoryShopStatus) accessoryShopStatus.textContent = `Not enough coins! ${ACCESSORIES[key]} costs ${ACCESSORY_COST} coins; you have ${coins}.`;
       return;
     }
@@ -1021,6 +1057,7 @@
     refreshAccessoryOptions();
     if (accessoryShopStatus) accessoryShopStatus.textContent = `Bought ${ACCESSORIES[key]}! Use EQUIP LEFT or EQUIP RIGHT here to put it on a paddle.`;
   }
+  if (ownerMode && ownerCodeStatus) ownerCodeStatus.textContent = '👑 OWNER MODE UNLOCKED — infinite coins and free accessories!';
   refreshAccessoryOptions();
   function addCoinsForWin() {
     // Coins are earned only when Player 1 defeats a CPU bot, not in local or online matches.

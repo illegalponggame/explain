@@ -418,6 +418,7 @@
         <label class="sr-only" for="ownerCodeInput">Owner code</label>
         <input id="ownerCodeInput" type="password" inputmode="numeric" autocomplete="off" placeholder="Enter owner code" style="flex:1;min-width:160px;color:#fff;background:#191919;border:1px solid #777;padding:10px;font:inherit">
         <button id="ownerCodeBtn" class="primary" type="button">Unlock</button>
+        <button id="ownerModeExitBtn" type="button" hidden>🚪 Leave Owner Mode</button>
       </div>
       <p id="ownerCodeStatus" role="status" aria-live="polite" style="color:#aaa;margin:8px 0 0">Owner mode is locked.</p>
       <audio id="musicAudio" preload="none" loop style="display:block;width:100%;max-width:560px;margin-top:12px">
@@ -990,11 +991,18 @@
   const accessoryShopStatus = document.getElementById('accessoryShopStatus');
   const ownerCodeInput = document.getElementById('ownerCodeInput');
   const ownerCodeBtn = document.getElementById('ownerCodeBtn');
+  const ownerModeExitBtn = document.getElementById('ownerModeExitBtn');
   const ownerCodeStatus = document.getElementById('ownerCodeStatus');
   const OWNER_CODE = '202013';
   const OWNER_MODE_KEY = 'illegalPongOwnerModeV1';
   let ownerMode = false;
   try { ownerMode = localStorage.getItem(OWNER_MODE_KEY) === 'unlocked'; } catch (_) {}
+  function updateOwnerModeControls() {
+    if (ownerModeExitBtn) ownerModeExitBtn.hidden = !ownerMode;
+    if (ownerCodeBtn) ownerCodeBtn.textContent = ownerMode ? 'Owner Mode Active' : 'Unlock';
+    if (ownerCodeBtn) ownerCodeBtn.disabled = ownerMode;
+    if (ownerCodeInput) ownerCodeInput.disabled = ownerMode;
+  }
   function unlockOwnerMode() {
     if (ownerMode) {
       if (ownerCodeStatus) ownerCodeStatus.textContent = '👑 Owner mode is already unlocked on this browser.';
@@ -1005,13 +1013,23 @@
       try { localStorage.setItem(OWNER_MODE_KEY, 'unlocked'); } catch (_) {}
       if (ownerCodeInput) ownerCodeInput.value = '';
       if (ownerCodeStatus) ownerCodeStatus.textContent = '👑 OWNER MODE UNLOCKED — infinite coins and free accessories!';
+      updateOwnerModeControls();
       updateCoinDisplay();
       refreshAccessoryOptions();
     } else if (ownerCodeStatus) {
       ownerCodeStatus.textContent = 'Incorrect code. Try again.';
     }
   }
+  function leaveOwnerMode() {
+    ownerMode = false;
+    try { localStorage.removeItem(OWNER_MODE_KEY); } catch (_) {}
+    if (ownerCodeStatus) ownerCodeStatus.textContent = 'Owner mode is locked. You can unlock it again with the owner code.';
+    updateOwnerModeControls();
+    updateCoinDisplay();
+    refreshAccessoryOptions();
+  }
   if (ownerCodeBtn) ownerCodeBtn.addEventListener('click', unlockOwnerMode);
+  if (ownerModeExitBtn) ownerModeExitBtn.addEventListener('click', leaveOwnerMode);
   if (ownerCodeInput) ownerCodeInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') unlockOwnerMode();
   });
@@ -1091,7 +1109,7 @@
       if (accessoryShopStatus) accessoryShopStatus.textContent = `Not enough coins! ${ACCESSORIES[key]} costs ${ACCESSORY_COST} coins; you have ${coins}.`;
       return;
     }
-    coins -= ACCESSORY_COST;
+    if (!ownerMode) coins -= ACCESSORY_COST;
     ownedAccessories[key] = true;
     saveOwnedAccessories();
     try { localStorage.setItem(COIN_STORAGE_KEY, String(coins)); } catch (_) {}
@@ -1100,6 +1118,7 @@
     if (accessoryShopStatus) accessoryShopStatus.textContent = `Bought ${ACCESSORIES[key]}! Use EQUIP LEFT or EQUIP RIGHT here to put it on a paddle.`;
   }
   if (ownerMode && ownerCodeStatus) ownerCodeStatus.textContent = '👑 OWNER MODE UNLOCKED — infinite coins and free accessories!';
+  updateOwnerModeControls();
   refreshAccessoryOptions();
   function addCoinsForWin() {
     // Coins are earned only when Player 1 defeats a CPU bot, not in local or online matches.

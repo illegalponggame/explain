@@ -61,6 +61,14 @@
   .achievement-row.unlocked .achievement-icon { filter:none; }
   .achievement-description { color:#bbb; line-height:1.5; font-size:.9rem; }
   #achievementConfetti { position:fixed; inset:0; width:100%; height:100%; z-index:1100; pointer-events:none; }
+  .account-panel { position: fixed; top: 10px; left: 10px; z-index: 900; margin: 0; padding: 12px; border: 2px solid #888; background: rgba(12,12,12,.97); box-shadow: 4px 4px 0 #292929; width: min(390px, calc(100vw - 20px)); max-height: calc(100vh - 20px); overflow-y: auto; }
+  .account-panel h2 { margin: 0 0 8px; font-size: 1.05rem; }
+  .account-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .account-panel input { box-sizing: border-box; min-width: 0; width: 100%; padding: 9px; background: #191919; border: 1px solid #777; color: #fff; font: inherit; }
+  .account-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+  .account-actions button { padding: 8px 10px; }
+  #accountStatus { margin: 9px 0 0; color: #bbb; font-size: .85rem; }
+  @media (max-width:620px) { .account-fields { grid-template-columns: 1fr; } .account-panel { top: 6px; left: 6px; width: min(340px, calc(100vw - 12px)); max-height: 45vh; } }
   @media (max-width:620px) {
     .coin-display { position:static; width:fit-content; margin:0 0 12px auto; }
     .achievements-open { position:static; display:block; margin:0 0 12px auto; }
@@ -386,6 +394,22 @@
     <p class="subtitle">Two paddles. One ball. Open ⚙ Settings whenever you want to change music.</p>
   </header>
 
+  <section class="account-panel" aria-label="Player account">
+    <h2>👤 Player Account</h2>
+    <p style="color:#aaa;margin:0 0 10px">Create an account with a username and password, or play as a guest.</p>
+    <div class="account-fields">
+      <label><span style="display:block;margin-bottom:5px">Username</span><input id="accountUsername" type="text" minlength="3" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="3–20 letters, numbers, _ or -"></label>
+      <label><span style="display:block;margin-bottom:5px">Password</span><input id="accountPassword" type="password" minlength="6" autocomplete="current-password" placeholder="At least 6 characters"></label>
+    </div>
+    <div class="account-actions">
+      <button id="createAccountBtn" class="primary" type="button">Create Account</button>
+      <button id="signInAccountBtn" type="button">Sign In</button>
+      <button id="guestAccountBtn" type="button">Continue as Guest</button>
+      <button id="signOutAccountBtn" type="button" hidden>Sign Out</button>
+    </div>
+    <p id="accountStatus" role="status" aria-live="polite">Not signed in. Create an account or continue as a guest.</p>
+  </section>
+
     <div id="settingsPanel" class="settings-panel" aria-label="Settings">
       <h2>⚙ Settings & Music</h2>
       <p>Choose a song and press Play Music. Music loops continuously; Song 2 is built into this HTML file.</p>
@@ -650,11 +674,15 @@
   const voteStatus = document.getElementById('voteStatus');
 
   function setOnlineStatus(message) { if (onlineStatus) onlineStatus.textContent = message; }
-  async function ensureOnlineClient() {
+  function getSupabaseClient() {
     if (!window.supabase?.createClient) throw new Error('Supabase client did not load. Refresh the page and try again.');
     if (!supabase) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
     });
+    return supabase;
+  }
+  async function ensureOnlineClient() {
+    getSupabaseClient();
     const { data: { session } = {}, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) throw sessionError;
     if (session?.user) onlineUserId = session.user.id;
@@ -664,6 +692,138 @@
       onlineUserId = data.user.id;
     }
   }
+  // Username/password accounts use Supabase Auth with a private synthetic email address.
+  // Email confirmation must be disabled in Supabase because players only enter username + password.
+  const accountUsername = document.getElementById('accountUsername');
+  const accountPassword = document.getElementById('accountPassword');
+  const createAccountBtn = document.getElementById('createAccountBtn');
+  const signInAccountBtn = document.getElementById('signInAccountBtn');
+  const guestAccountBtn = document.getElementById('guestAccountBtn');
+  const signOutAccountBtn = document.getElementById('signOutAccountBtn');
+  const accountStatus = document.getElementById('accountStatus');
+  function setAccountStatus(message) { if (accountStatus) accountStatus.textContent = message; }
+  function cleanUsername() { return (accountUsername?.value || '').trim(); }
+  function usernameEmail(username) { return username.toLowerCase() + '@illegalpong.local'; }
+  function validUsername(username) { return /^[a-zA-Z0-9_-]{3,20}$/.test(username); }
+  function updateAccountControls(user) {
+    const username = user?.user_metadata?.username;
+    if (user && !user.is_anonymous) {
+      setAccountStatus('Signed in as ' + (username || 'player') + '.');
+      if (signOutAccountBtn) signOutAccountBtn.hidden = false;
+      if (createAccountBtn) createAccountBtn.hidden = true;
+      if (signInAccountBtn) signInAccountBtn.hidden = true;
+      if (guestAccountBtn) guestAccountBtn.hidden = true;
+      if (accountUsername) accountUsername.disabled = true;
+      if (accountPassword) accountPassword.disabled = true;
+    } else if (user?.is_anonymous) {
+      setAccountStatus('Playing as a guest. Your account progress is not synced between devices yet.');
+      if (signOutAccountBtn) signOutAccountBtn.hidden = false;
+      if (createAccountBtn) createAccountBtn.hidden = false;
+      if (signInAccountBtn) signInAccountBtn.hidden = false;
+      if (guestAccountBtn) guestAccountBtn.hidden = true;
+      if (accountUsername) accountUsername.disabled = false;
+      if (accountPassword) accountPassword.disabled = false;
+    } else {
+      setAccountStatus('Not signed in. Create an account or continue as a guest.');
+      if (signOutAccountBtn) signOutAccountBtn.hidden = true;
+      if (createAccountBtn) createAccountBtn.hidden = false;
+      if (signInAccountBtn) signInAccountBtn.hidden = false;
+      if (guestAccountBtn) guestAccountBtn.hidden = false;
+      if (accountUsername) accountUsername.disabled = false;
+      if (accountPassword) accountPassword.disabled = false;
+    }
+  }
+  async function refreshAccountStatus() {
+    try {
+      getSupabaseClient();
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      const user = data.session?.user || null;
+      if (user) onlineUserId = user.id;
+      updateAccountControls(user);
+    } catch (error) { setAccountStatus('Account service unavailable: ' + (error.message || 'please refresh and try again.')); }
+  }
+  async function createPlayerAccount() {
+    const username = cleanUsername();
+    const password = accountPassword?.value || '';
+    if (!validUsername(username)) { setAccountStatus('Username must be 3–20 characters using letters, numbers, _ or -.'); return; }
+    if (password.length < 6) { setAccountStatus('Password must be at least 6 characters.'); return; }
+    createAccountBtn.disabled = true; signInAccountBtn.disabled = true;
+    setAccountStatus('Creating account…');
+    try {
+      getSupabaseClient();
+      const { data, error } = await supabase.auth.signUp({
+        email: usernameEmail(username), password, options: { data: { username } }
+      });
+      if (error) throw error;
+      if (!data.session || !data.user) {
+        setAccountStatus('Supabase is asking for email confirmation. In Supabase, turn OFF Confirm email under Authentication settings, then try again.');
+        return;
+      }
+      onlineUserId = data.user.id;
+      accountPassword.value = '';
+      updateAccountControls(data.user);
+    } catch (error) {
+      const message = error.message || 'Could not create account.';
+      setAccountStatus(/already registered|already exists/i.test(message) ? 'That username is already taken. Choose another one or sign in.' : message);
+    } finally { createAccountBtn.disabled = false; signInAccountBtn.disabled = false; }
+  }
+  async function signInPlayerAccount() {
+    const username = cleanUsername();
+    const password = accountPassword?.value || '';
+    if (!validUsername(username)) { setAccountStatus('Enter a valid username (3–20 letters, numbers, _ or -).'); return; }
+    if (!password) { setAccountStatus('Enter your password.'); return; }
+    createAccountBtn.disabled = true; signInAccountBtn.disabled = true;
+    setAccountStatus('Signing in…');
+    try {
+      getSupabaseClient();
+      const { data, error } = await supabase.auth.signInWithPassword({ email: usernameEmail(username), password });
+      if (error) throw error;
+      onlineUserId = data.user.id;
+      accountPassword.value = '';
+      updateAccountControls(data.user);
+    } catch (error) { setAccountStatus('Could not sign in. Check your username and password.'); }
+    finally { createAccountBtn.disabled = false; signInAccountBtn.disabled = false; }
+  }
+  async function continueAsGuest() {
+    guestAccountBtn.disabled = true; setAccountStatus('Starting guest session…');
+    try {
+      getSupabaseClient();
+      const { data: current } = await supabase.auth.getSession();
+      if (current.session?.user && !current.session.user.is_anonymous) {
+        setAccountStatus('You are signed into an account. Sign out first to switch to guest mode.');
+        return;
+      }
+      if (current.session?.user?.is_anonymous) { onlineUserId = current.session.user.id; updateAccountControls(current.session.user); return; }
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+      onlineUserId = data.user.id; updateAccountControls(data.user);
+    } catch (error) { setAccountStatus(error.message || 'Could not start guest mode.'); }
+    finally { guestAccountBtn.disabled = false; }
+  }
+  async function signOutPlayer() {
+    try {
+      getSupabaseClient();
+      if (onlineActive) await leaveOnlineSearch();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      onlineUserId = null;
+      if (accountUsername) accountUsername.value = '';
+      if (accountPassword) accountPassword.value = '';
+      updateAccountControls(null);
+      accountUsername?.focus();
+    } catch (error) { setAccountStatus(error.message || 'Could not sign out.'); }
+  }
+  createAccountBtn?.addEventListener('click', createPlayerAccount);
+  signInAccountBtn?.addEventListener('click', signInPlayerAccount);
+  guestAccountBtn?.addEventListener('click', continueAsGuest);
+  signOutAccountBtn?.addEventListener('click', signOutPlayer);
+  accountPassword?.addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    // Enter signs in; use the explicit Create Account button for registration.
+    if (signInAccountBtn && !signInAccountBtn.hidden) signInPlayerAccount();
+  });
   async function leaveOnlineSearch() {
     if (onlinePollHandle) { clearInterval(onlinePollHandle); onlinePollHandle = null; }
     if (onlineChannel && supabase) { try { await supabase.removeChannel(onlineChannel); } catch (_) {} onlineChannel = null; }
@@ -967,6 +1127,7 @@
   const SUPABASE_URL = 'https://vbemoaunjghqwihzlllb.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_ZBaDYLWtuQLjK-1sWjUmvQ_2TYX3bGM';
   let supabase = null, onlineUserId = null, onlineMatchId = null, onlineRole = null;
+  refreshAccountStatus();
   let onlineChannel = null, onlineActive = false, remoteRightY = H / 2 - 54;
   // Smooth remote snapshots on Player 2 instead of visibly snapping every packet.
   let onlineRenderTarget = null;
@@ -2571,11 +2732,14 @@
     if (onlineActive) {
       if (onlineRole === 'player_two') {
         if (onlineRenderTarget) {
-          const ease = 0.38;
-          leftY += (onlineRenderTarget.leftY - leftY) * ease;
-          rightY += (onlineRenderTarget.rightY - rightY) * ease;
-          ball.x += (onlineRenderTarget.x - ball.x) * ease;
-          ball.y += (onlineRenderTarget.y - ball.y) * ease;
+          // Follow newer snapshots more quickly so remote movement feels responsive,
+          // while still smoothing small network jitters between packets.
+          const paddleEase = 0.56;
+          const ballEase = 0.50;
+          leftY += (onlineRenderTarget.leftY - leftY) * paddleEase;
+          rightY += (onlineRenderTarget.rightY - rightY) * paddleEase;
+          ball.x += (onlineRenderTarget.x - ball.x) * ballEase;
+          ball.y += (onlineRenderTarget.y - ball.y) * ballEase;
           ball.vx = onlineRenderTarget.vx; ball.vy = onlineRenderTarget.vy;
         }
         if (isLaggyMovementFrame('right')) {
@@ -2583,11 +2747,13 @@
           if (keys.has('ArrowUp')) remoteRightY = Math.max(0, remoteRightY - 7.4 * dt * onlineMoveScale);
           if (keys.has('ArrowDown')) remoteRightY = Math.min(H - 108, remoteRightY + 7.4 * dt * onlineMoveScale);
         }
-        if (now - lastStateSent > 75) {
+        // Send movement inputs a little more often for lower perceived input delay.
+        if (now - lastStateSent > 40) {
           lastStateSent = now;
           broadcastOnline('input', { rightY: remoteRightY });
         }
-      } else if (onlineRole === 'player_one' && now - lastStateSent > 75) {
+      } else if (onlineRole === 'player_one' && now - lastStateSent > 50) {
+        // 20 snapshots/sec is a smoother compromise without flooding Realtime.
         lastStateSent = now;
         broadcastOnline('state', {
           leftY, rightY, ball: { x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy },

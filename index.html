@@ -1127,13 +1127,13 @@
     const target = difficulty === 'impossible' ? 3 : Number(ui.winScore.value);
     let reward = 0;
     if (difficulty === 'easy') {
-      reward = target === 3 ? 0 : (target === 5 || target === 7 ? 3 : 5);
+      reward = target === 3 ? 1 : (target === 5 || target === 7 ? 4 : 6);
     } else if (difficulty === 'medium') {
-      reward = target === 3 ? 0 : target === 5 ? 3 : target === 7 ? 6 : 9;
+      reward = target === 3 ? 2 : target === 5 ? 4 : target === 7 ? 7 : 10;
     } else if (difficulty === 'hard') {
-      reward = target === 3 ? 3 : target === 5 ? 5 : target === 7 ? 7 : target === 10 ? 10 : 15;
+      reward = target === 3 ? 4 : target === 5 ? 6 : target === 7 ? 8 : target === 10 ? 11 : 16;
     } else if (difficulty === 'impossible') {
-      reward = 90;
+      reward = 91;
     }
     if (reward > 0) {
       coins += reward;

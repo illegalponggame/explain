@@ -62,7 +62,12 @@
   .achievement-description { color:#bbb; line-height:1.5; font-size:.9rem; }
   #achievementConfetti { position:fixed; inset:0; width:100%; height:100%; z-index:1100; pointer-events:none; }
   .account-panel { position: fixed; top: 10px; left: 10px; z-index: 900; margin: 0; padding: 12px; border: 2px solid #888; background: rgba(12,12,12,.97); box-shadow: 4px 4px 0 #292929; width: min(390px, calc(100vw - 20px)); max-height: calc(100vh - 20px); overflow-y: auto; }
-  .account-panel h2 { margin: 0 0 8px; font-size: 1.05rem; }
+  .account-panel[hidden] { display: none !important; }
+  .account-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .account-panel h2 { margin: 0; font-size: 1.05rem; }
+  #closeAccountPanelBtn, #openAccountPanelBtn { padding:7px 10px; font:inherit; cursor:pointer; }
+  #openAccountPanelBtn { position:fixed; top:10px; left:10px; z-index:899; }
+  #openAccountPanelBtn[hidden] { display:none !important; }
   .account-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .account-panel input { box-sizing: border-box; min-width: 0; width: 100%; padding: 9px; background: #191919; border: 1px solid #777; color: #fff; font: inherit; }
   .account-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
@@ -394,8 +399,12 @@
     <p class="subtitle">Two paddles. One ball. Open ⚙ Settings whenever you want to change music.</p>
   </header>
 
-  <section class="account-panel" aria-label="Player account">
-    <h2>👤 Player Account</h2>
+  <button id="openAccountPanelBtn" type="button" hidden aria-controls="playerAccountPanel">👤 Accounts</button>
+  <section id="playerAccountPanel" class="account-panel" aria-label="Player account">
+    <div class="account-panel-heading">
+      <h2>👤 Player Account</h2>
+      <button id="closeAccountPanelBtn" type="button" aria-label="Close account panel">✖ Close</button>
+    </div>
     <p style="color:#aaa;margin:0 0 10px">Create an account with a username and password, or play as a guest.</p>
     <div class="account-fields">
       <label><span style="display:block;margin-bottom:5px">Username</span><input id="accountUsername" type="text" minlength="3" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="3–20 letters, numbers, _ or -"></label>
@@ -701,6 +710,19 @@
   const guestAccountBtn = document.getElementById('guestAccountBtn');
   const signOutAccountBtn = document.getElementById('signOutAccountBtn');
   const accountStatus = document.getElementById('accountStatus');
+  const playerAccountPanel = document.getElementById('playerAccountPanel');
+  const closeAccountPanelBtn = document.getElementById('closeAccountPanelBtn');
+  const openAccountPanelBtn = document.getElementById('openAccountPanelBtn');
+  function closePlayerAccountPanel() {
+    if (playerAccountPanel) playerAccountPanel.hidden = true;
+    if (openAccountPanelBtn) openAccountPanelBtn.hidden = false;
+  }
+  function openPlayerAccountPanel() {
+    if (playerAccountPanel) playerAccountPanel.hidden = false;
+    if (openAccountPanelBtn) openAccountPanelBtn.hidden = true;
+  }
+  closeAccountPanelBtn?.addEventListener('click', closePlayerAccountPanel);
+  openAccountPanelBtn?.addEventListener('click', openPlayerAccountPanel);
   function setAccountStatus(message) { if (accountStatus) accountStatus.textContent = message; }
   function cleanUsername() { return (accountUsername?.value || '').trim(); }
   function usernameEmail(username) { return username.toLowerCase() + '@illegalpong.local'; }

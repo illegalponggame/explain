@@ -786,8 +786,14 @@
       accountPassword.value = '';
       updateAccountControls(data.user);
     } catch (error) {
-      const message = error.message || 'Could not create account.';
-      setAccountStatus(/already registered|already exists/i.test(message) ? 'That username is already taken. Choose another one or sign in.' : message);
+      const message = error?.message || 'Could not create account.';
+      if (/rate limit|email rate limit|too many requests/i.test(message)) {
+        setAccountStatus('Supabase email rate limit reached. In your Supabase project, open Authentication → Sign In / Providers → Email and turn OFF Confirm email. Wait a while before trying again.');
+      } else if (/already registered|already exists|user already registered/i.test(message)) {
+        setAccountStatus('That username may already be registered. Try Sign In with the same username and password.');
+      } else {
+        setAccountStatus('Could not create account: ' + message);
+      }
     } finally { createAccountBtn.disabled = false; signInAccountBtn.disabled = false; }
   }
   async function signInPlayerAccount() {
@@ -804,7 +810,16 @@
       onlineUserId = data.user.id;
       accountPassword.value = '';
       updateAccountControls(data.user);
-    } catch (error) { setAccountStatus('Could not sign in. Check your username and password.'); }
+    } catch (error) {
+      const message = error?.message || '';
+      if (/invalid login credentials|email not confirmed|invalid.*credentials/i.test(message)) {
+        setAccountStatus('Sign-in failed. Check the username and password. If this account was created before Confirm email was turned OFF, wait a little and try again.');
+      } else if (/rate limit|too many requests/i.test(message)) {
+        setAccountStatus('Too many sign-in attempts. Wait a little before trying again.');
+      } else {
+        setAccountStatus('Could not sign in: ' + (message || 'please try again.'));
+      }
+    }
     finally { createAccountBtn.disabled = false; signInAccountBtn.disabled = false; }
   }
   async function continueAsGuest() {

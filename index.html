@@ -60,7 +60,20 @@
   .achievement-row.unlocked { border-color:#fff; background:#242424; }
   .achievement-row.unlocked .achievement-icon { filter:none; }
   .achievement-description { color:#bbb; line-height:1.5; font-size:.9rem; }
+  .achievement-preview-btn { margin-top:12px; padding:10px 13px; border:2px solid #ffcf55; background:#171717; color:#ffcf55; font:900  .95rem 'Courier New',monospace; cursor:pointer; box-shadow:3px 3px 0 #333; }
+  .achievement-preview-screen { position:fixed; inset:0; z-index:1050; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.88); text-align:center; font-family:'Courier New',monospace; }
+  .achievement-preview-screen.hidden { display:none; }
+  .achievement-preview-card { width:min(100%,720px); border:4px solid #ffcf55; padding:clamp(22px,5vw,48px); background:#101010; box-shadow:10px 10px 0 #333; animation:achievement-preview-pop .45s cubic-bezier(.2,1.4,.4,1) both; }
+  .achievement-preview-card h2 { color:#ffcf55; font-size:clamp(2rem,7vw,4rem); line-height:1.05; margin:0 0 18px; text-shadow:4px 4px 0 #5b3500; }
+  .achievement-preview-card p { color:#fff; font-size:clamp(1rem,2.5vw,1.35rem); line-height:1.5; }
+  .achievement-preview-card button { margin-top:14px; padding:10px 18px; border:2px solid #fff; background:#222; color:#fff; font:900 1rem 'Courier New',monospace; cursor:pointer; }
+  @keyframes achievement-preview-pop { from{transform:scale(.65);opacity:0} to{transform:scale(1);opacity:1} }
   #achievementConfetti { position:fixed; inset:0; width:100%; height:100%; z-index:1100; pointer-events:none; }
+  .achievement-toast { position:fixed; left:18px; bottom:18px; z-index:1200; width:min(360px,calc(100vw - 36px)); padding:14px 16px; border:3px solid #fff; background:#101010; color:#fff; box-shadow:6px 6px 0 #333; font-family:'Courier New',monospace; transform:translateY(150%); opacity:0; pointer-events:none; }
+  .achievement-toast.show { animation:achievement-toast-in 5.2s ease forwards; }
+  .achievement-toast strong { display:block; color:#ffcf55; margin-bottom:5px; font-size:1rem; }
+  .achievement-toast span { font-size:.9rem; line-height:1.4; }
+  @keyframes achievement-toast-in { 0%{transform:translateY(150%);opacity:0} 12%,82%{transform:translateY(0);opacity:1} 100%{transform:translateY(150%);opacity:0} }
   .account-panel { position: fixed; top: 10px; left: 10px; z-index: 900; margin: 0; padding: 12px; border: 2px solid #888; background: rgba(12,12,12,.97); box-shadow: 4px 4px 0 #292929; width: min(390px, calc(100vw - 20px)); max-height: calc(100vh - 20px); overflow-y: auto; }
   .account-panel[hidden] { display: none !important; }
   .account-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
@@ -390,9 +403,28 @@
           <div class="achievement-description">To unlock this achievement, beat Medium Bot in a First to 3 match while having the Laggy Paddle accessory equipped on your left paddle.</div>
         </div>
       </div>
+      <div id="finallyAchievementRow" class="achievement-row" style="margin-top:12px">
+        <div class="achievement-icon">🎉</div>
+        <div>
+          <strong>FINALLY I DID IT</strong>
+          <div id="finallyAchievementState" style="margin:5px 0;color:#ffcf55;font-weight:900">🔒 LOCKED</div>
+          <div class="achievement-description">To unlock this achievement, defeat the Final Boss.</div>
+          <button id="previewFinallyAchievementBtn" class="achievement-preview-btn" type="button">🎊 Preview Celebration</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div id="finallyAchievementPreview" class="achievement-preview-screen hidden" role="dialog" aria-modal="true" aria-labelledby="finallyPreviewTitle">
+    <section class="achievement-preview-card">
+      <div style="font-size:clamp(2rem,7vw,4rem);margin-bottom:12px">🏆 🎉 🏆</div>
+      <h2 id="finallyPreviewTitle">FINALLY I DID IT!</h2>
+      <p>Congratulations! You defeated the Final Boss and unlocked the FINALLY I DID IT achievement! 🎊</p>
+      <p style="color:#ffcf55;font-weight:900">CELEBRATION PREVIEW — THIS DOES NOT UNLOCK THE ACHIEVEMENT</p>
+      <button id="closeFinallyPreviewBtn" type="button">Awesome! Close Preview</button>
     </section>
   </div>
   <canvas id="achievementConfetti" aria-hidden="true"></canvas>
+  <div id="achievementToast" class="achievement-toast" role="status" aria-live="polite"><strong>🏆 ACHIEVEMENT UNLOCKED!</strong><span>Congrats, you did it!</span></div>
   <header>
     <div class="eyebrow">Retro • Neon • Arcade</div>
     <h1>ILLEGAL <span>PONG</span></h1>
@@ -1566,6 +1598,9 @@
   }
 
   const IMPOSSIBLE_ACHIEVEMENT_KEY = 'illegalPongAchievementCompletedImpossibleV1';
+  const FINALLY_ACHIEVEMENT_KEY = 'illegalPongAchievementFinallyIDidItV1';
+  let completedFinally = false;
+  try { completedFinally = localStorage.getItem(FINALLY_ACHIEVEMENT_KEY) === 'unlocked'; } catch (_) {}
   let completedImpossible = false;
   try { completedImpossible = localStorage.getItem(IMPOSSIBLE_ACHIEVEMENT_KEY) === 'unlocked'; } catch (_) {}
   const achievementsOpenBtn = document.getElementById('achievementsOpenBtn');
@@ -1573,10 +1608,18 @@
   const achievementsCloseBtn = document.getElementById('achievementsCloseBtn');
   const impossibleAchievementRow = document.getElementById('impossibleAchievementRow');
   const impossibleAchievementState = document.getElementById('impossibleAchievementState');
+  const finallyAchievementRow = document.getElementById('finallyAchievementRow');
+  const finallyAchievementState = document.getElementById('finallyAchievementState');
+  const achievementToast = document.getElementById('achievementToast');
   const achievementConfetti = document.getElementById('achievementConfetti');
+  const previewFinallyAchievementBtn = document.getElementById('previewFinallyAchievementBtn');
+  const finallyAchievementPreview = document.getElementById('finallyAchievementPreview');
+  const closeFinallyPreviewBtn = document.getElementById('closeFinallyPreviewBtn');
   function refreshAchievementUI() {
     if (impossibleAchievementState) impossibleAchievementState.textContent = completedImpossible ? '✓ UNLOCKED' : '🔒 LOCKED';
     if (impossibleAchievementRow) impossibleAchievementRow.classList.toggle('unlocked', completedImpossible);
+    if (finallyAchievementState) finallyAchievementState.textContent = completedFinally ? '✓ UNLOCKED' : '🔒 LOCKED';
+    if (finallyAchievementRow) finallyAchievementRow.classList.toggle('unlocked', completedFinally);
   }
   function openAchievements() {
     if (achievementsModal) achievementsModal.classList.remove('hidden');
@@ -1588,9 +1631,20 @@
     if (achievementsOpenBtn) achievementsOpenBtn.setAttribute('aria-expanded', 'false');
   }
   if (achievementsOpenBtn) achievementsOpenBtn.addEventListener('click', openAchievements);
+  function closeFinallyPreview() { if (finallyAchievementPreview) finallyAchievementPreview.classList.add('hidden'); }
+  function previewFinallyCelebration() {
+    closeAchievements();
+    if (finallyAchievementPreview) finallyAchievementPreview.classList.remove('hidden');
+    celebrateAchievement();
+    showAchievementToast('🎉 FINALLY I DID IT!', 'Congrats, you did it! You defeated the Final Boss! (Preview only)');
+    // Preview is visual only: deliberately do not change completedFinally or localStorage.
+  }
+  if (previewFinallyAchievementBtn) previewFinallyAchievementBtn.addEventListener('click', previewFinallyCelebration);
+  if (closeFinallyPreviewBtn) closeFinallyPreviewBtn.addEventListener('click', closeFinallyPreview);
+  if (finallyAchievementPreview) finallyAchievementPreview.addEventListener('click', event => { if (event.target === finallyAchievementPreview) closeFinallyPreview(); });
   if (achievementsCloseBtn) achievementsCloseBtn.addEventListener('click', closeAchievements);
   if (achievementsModal) achievementsModal.addEventListener('click', event => { if (event.target === achievementsModal) closeAchievements(); });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAchievements(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeAchievements(); closeFinallyPreview(); } });
   refreshAchievementUI();
 
   function celebrateAchievement() {
@@ -1621,13 +1675,37 @@
     return true;
   }
 
+  function showAchievementToast(title, message) {
+    if (!achievementToast) return;
+    const strong = achievementToast.querySelector('strong');
+    const span = achievementToast.querySelector('span');
+    if (strong) strong.textContent = title;
+    if (span) span.textContent = message;
+    achievementToast.classList.remove('show');
+    void achievementToast.offsetWidth;
+    achievementToast.classList.add('show');
+  }
+
+  function checkFinallyAchievement(winner) {
+    const qualifies = winner === 'Player 1' && mode === 'cpu' && ui.difficulty.value === 'impossible';
+    if (!qualifies || completedFinally) return false;
+    completedFinally = true;
+    try { localStorage.setItem(FINALLY_ACHIEVEMENT_KEY, 'unlocked'); } catch (_) {}
+    refreshAchievementUI();
+    celebrateAchievement();
+    showAchievementToast('🎉 FINALLY I DID IT!', 'Congrats, you did it! You defeated the Final Boss!');
+    showOverlay('🎉 FINALLY I DID IT! 🎉', 'Congratulations! You defeated the Final Boss and unlocked the FINALLY I DID IT achievement! 🎊', 'Awesome!');
+    ui.status.textContent = '🏆 ACHIEVEMENT UNLOCKED: FINALLY I DID IT!';
+    return true;
+  }
+
   function finishGame(winner) {
     running = false;
     paused = false;
     gameOver = true;
     const coinReward = winner === 'Player 1' ? addCoinsForWin() : 0;
     const rewardText = coinReward > 0 ? ` You earned ${coinReward} coins!` : '';
-    if (checkImpossibleAchievement(winner)) return;
+    if (checkFinallyAchievement(winner) || checkImpossibleAchievement(winner)) return;
 
     showOverlay(
       `${winner} wins! 🎉`,

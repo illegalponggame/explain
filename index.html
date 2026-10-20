@@ -206,6 +206,8 @@
     margin: 0 0 14px;
   }
   .settings-panel.open { display: block; }
+  .reset-progress-btn { display:block; width:100%; margin:0 0 14px; padding:12px 14px; border:3px solid #ff2a2a; background:#7d0000; color:#fff; font:900 1rem 'Courier New',monospace; letter-spacing:.04em; cursor:pointer; box-shadow:4px 4px 0 #300; }
+  .reset-progress-btn:hover { background:#a00000; }
   .settings-panel h2 { margin: 0 0 10px; font-size: 1.1rem; }
   .settings-panel p { color: var(--muted); margin: 8px 0 12px; line-height: 1.5; }
   .settings-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -404,7 +406,7 @@
           <strong>COMPLETED THE IMPOSSIBLE</strong>
           <div id="impossibleAchievementState" style="margin:5px 0;color:#ffcf55;font-weight:900">🔒 LOCKED</div>
           <div class="achievement-description">To unlock this achievement, beat Medium Bot in a First to 3 match while having the Laggy Paddle accessory equipped on your left paddle.</div>
-          <button id="previewImpossibleAchievementBtn" class="achievement-preview-btn" type="button">🎊 Preview Celebration</button>
+          <button id="previewImpossibleAchievementBtn" class="achievement-preview-btn owner-only-preview" type="button" hidden>🎊 Preview Celebration</button>
         </div>
       </div>
       <div id="finallyAchievementRow" class="achievement-row" style="margin-top:12px">
@@ -413,7 +415,7 @@
           <strong>FINALLY I DID IT</strong>
           <div id="finallyAchievementState" style="margin:5px 0;color:#ffcf55;font-weight:900">🔒 LOCKED</div>
           <div class="achievement-description">To unlock this achievement, defeat the Final Boss.</div>
-          <button id="previewFinallyAchievementBtn" class="achievement-preview-btn" type="button">🎊 Preview Celebration</button>
+          <button id="previewFinallyAchievementBtn" class="achievement-preview-btn owner-only-preview" type="button" hidden>🎊 Preview Celebration</button>
         </div>
       </div>
     </section>
@@ -466,6 +468,7 @@
   </section>
 
     <div id="settingsPanel" class="settings-panel" aria-label="Settings">
+      <button id="resetAllProgressBtn" class="reset-progress-btn" type="button">⚠ RESET ALL PROGRESS</button>
       <h2>⚙ Settings & Music</h2>
       <p>Choose a song and press Play Music. Music loops continuously; Song 2 is built into this HTML file.</p>
       <label for="musicChoice">🎵 Choose music</label>
@@ -1069,7 +1072,7 @@
         }
       });
     if (onlinePollHandle) clearInterval(onlinePollHandle);
-    onlinePollHandle = setInterval(refreshOnlineMatch, 1500);
+    onlinePollHandle = setInterval(refreshOnlineMatch, 2500);
   }
   function applyOnlineState(st) {
     if (!onlineActive || onlineRole === 'player_one') return;
@@ -1306,6 +1309,8 @@
     if (ownerCodeBtn) ownerCodeBtn.textContent = ownerMode ? 'Owner Mode Active' : 'Unlock';
     if (ownerCodeBtn) ownerCodeBtn.disabled = ownerMode;
     if (ownerCodeInput) ownerCodeInput.disabled = ownerMode;
+    // Achievement celebration previews are visible only while Owner Mode is unlocked.
+    document.querySelectorAll('.owner-only-preview').forEach(button => { button.hidden = !ownerMode; });
   }
   function unlockOwnerMode() {
     if (ownerMode) {
@@ -1334,6 +1339,21 @@
   }
   if (ownerCodeBtn) ownerCodeBtn.addEventListener('click', unlockOwnerMode);
   if (ownerModeExitBtn) ownerModeExitBtn.addEventListener('click', leaveOwnerMode);
+  const resetAllProgressBtn = document.getElementById('resetAllProgressBtn');
+  if (resetAllProgressBtn) resetAllProgressBtn.addEventListener('click', () => {
+    const confirmed = window.confirm('Reset ALL ILLEGAL PONG progress on this browser? This clears coins, bought accessories, equipped progress, achievements, and Owner Mode. Your account login is not deleted. This cannot be undone.');
+    if (!confirmed) return;
+    try {
+      [
+        'illegalPongCoinsV1',
+        'illegalPongAccessoriesOwnedV1',
+        'illegalPongOwnerModeV1',
+        'illegalPongAchievementCompletedImpossibleV1',
+        'illegalPongAchievementFinallyIDidItV1'
+      ].forEach(key => localStorage.removeItem(key));
+    } catch (_) {}
+    window.location.reload();
+  });
   if (ownerCodeInput) ownerCodeInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') unlockOwnerMode();
   });
@@ -2984,9 +3004,9 @@
       ctx.fillRect(0, 0, W, H);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.shadowColor = '#ff2020';
+      ctx.shadowColor = '#b33a00';
       ctx.shadowBlur = 30;
-      ctx.fillStyle = '#ff2424';
+      ctx.fillStyle = '#c24100';
       ctx.font = '900 86px system-ui, sans-serif';
       ctx.fillText('DEATHMATCH!', W / 2, H / 2 - 10);
       ctx.shadowBlur = 0;
@@ -3062,13 +3082,13 @@
           if (keys.has('ArrowUp')) remoteRightY = Math.max(0, remoteRightY - 7.4 * dt * onlineMoveScale);
           if (keys.has('ArrowDown')) remoteRightY = Math.min(H - 108, remoteRightY + 7.4 * dt * onlineMoveScale);
         }
-        // Send movement inputs a little more often for lower perceived input delay.
-        if (now - lastStateSent >= 33) {
+        // Send movement inputs at a steady rate to avoid flooding Realtime with redundant packets.
+        if (now - lastStateSent >= 40) {
           lastStateSent = now;
           broadcastOnline('input', { rightY: remoteRightY });
         }
-      } else if (onlineRole === 'player_one' && now - lastStateSent >= 33) {
-        // Keep authoritative snapshots near 30fps for lower perceived online delay.
+      } else if (onlineRole === 'player_one' && now - lastStateSent >= 40) {
+        // Keep authoritative snapshots near 25fps to reduce network traffic while staying responsive.
         lastStateSent = now;
         broadcastOnline('state', {
           leftY, rightY, ball: { x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy },

@@ -401,6 +401,7 @@
           <strong>COMPLETED THE IMPOSSIBLE</strong>
           <div id="impossibleAchievementState" style="margin:5px 0;color:#ffcf55;font-weight:900">🔒 LOCKED</div>
           <div class="achievement-description">To unlock this achievement, beat Medium Bot in a First to 3 match while having the Laggy Paddle accessory equipped on your left paddle.</div>
+          <button id="previewImpossibleAchievementBtn" class="achievement-preview-btn" type="button">🎊 Preview Celebration</button>
         </div>
       </div>
       <div id="finallyAchievementRow" class="achievement-row" style="margin-top:12px">
@@ -412,6 +413,15 @@
           <button id="previewFinallyAchievementBtn" class="achievement-preview-btn" type="button">🎊 Preview Celebration</button>
         </div>
       </div>
+    </section>
+  </div>
+  <div id="impossibleAchievementPreview" class="achievement-preview-screen hidden" role="dialog" aria-modal="true" aria-labelledby="impossiblePreviewTitle">
+    <section class="achievement-preview-card">
+      <div style="font-size:clamp(2rem,7vw,4rem);margin-bottom:12px">🏆 🎉 🏆</div>
+      <h2 id="impossiblePreviewTitle">COMPLETED THE IMPOSSIBLE!</h2>
+      <p>Incredible! You beat Medium Bot first to 3 with the Laggy Paddle equipped and unlocked the achievement! 🎊</p>
+      <p style="color:#ffcf55;font-weight:900">CELEBRATION PREVIEW — THIS DOES NOT UNLOCK THE ACHIEVEMENT</p>
+      <button id="closeImpossiblePreviewBtn" type="button">Awesome! Close Preview</button>
     </section>
   </div>
   <div id="finallyAchievementPreview" class="achievement-preview-screen hidden" role="dialog" aria-modal="true" aria-labelledby="finallyPreviewTitle">
@@ -1615,6 +1625,9 @@
   const previewFinallyAchievementBtn = document.getElementById('previewFinallyAchievementBtn');
   const finallyAchievementPreview = document.getElementById('finallyAchievementPreview');
   const closeFinallyPreviewBtn = document.getElementById('closeFinallyPreviewBtn');
+  const previewImpossibleAchievementBtn = document.getElementById('previewImpossibleAchievementBtn');
+  const impossibleAchievementPreview = document.getElementById('impossibleAchievementPreview');
+  const closeImpossiblePreviewBtn = document.getElementById('closeImpossiblePreviewBtn');
   function refreshAchievementUI() {
     if (impossibleAchievementState) impossibleAchievementState.textContent = completedImpossible ? '✓ UNLOCKED' : '🔒 LOCKED';
     if (impossibleAchievementRow) impossibleAchievementRow.classList.toggle('unlocked', completedImpossible);
@@ -1632,6 +1645,17 @@
   }
   if (achievementsOpenBtn) achievementsOpenBtn.addEventListener('click', openAchievements);
   function closeFinallyPreview() { if (finallyAchievementPreview) finallyAchievementPreview.classList.add('hidden'); }
+  function closeImpossiblePreview() { if (impossibleAchievementPreview) impossibleAchievementPreview.classList.add('hidden'); }
+  function previewImpossibleCelebration() {
+    closeAchievements();
+    if (impossibleAchievementPreview) impossibleAchievementPreview.classList.remove('hidden');
+    celebrateAchievement();
+    showAchievementToast('🏆 COMPLETED THE IMPOSSIBLE!', 'You beat Medium Bot first to 3 with the Laggy Paddle! (Preview only)');
+    // Preview is visual only: deliberately do not change completedImpossible or localStorage.
+  }
+  if (previewImpossibleAchievementBtn) previewImpossibleAchievementBtn.addEventListener('click', previewImpossibleCelebration);
+  if (closeImpossiblePreviewBtn) closeImpossiblePreviewBtn.addEventListener('click', closeImpossiblePreview);
+  if (impossibleAchievementPreview) impossibleAchievementPreview.addEventListener('click', event => { if (event.target === impossibleAchievementPreview) closeImpossiblePreview(); });
   function previewFinallyCelebration() {
     closeAchievements();
     if (finallyAchievementPreview) finallyAchievementPreview.classList.remove('hidden');
@@ -1644,7 +1668,7 @@
   if (finallyAchievementPreview) finallyAchievementPreview.addEventListener('click', event => { if (event.target === finallyAchievementPreview) closeFinallyPreview(); });
   if (achievementsCloseBtn) achievementsCloseBtn.addEventListener('click', closeAchievements);
   if (achievementsModal) achievementsModal.addEventListener('click', event => { if (event.target === achievementsModal) closeAchievements(); });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeAchievements(); closeFinallyPreview(); } });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeAchievements(); closeFinallyPreview(); closeImpossiblePreview(); } });
   refreshAchievementUI();
 
   function celebrateAchievement() {

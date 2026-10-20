@@ -866,6 +866,7 @@
     onlineOpponentName = null; onlineOwnPublicName = null;
     onlineRenderTarget = null;
     if (onlinePollHandle) { clearInterval(onlinePollHandle); onlinePollHandle = null; }
+    onlinePendingPayload.clear();
     if (onlineChannel && supabase) { try { await supabase.removeChannel(onlineChannel); } catch (_) {} onlineChannel = null; }
     if (supabase && onlineUserId && !onlineMatchId) {
       try { await supabase.rpc('leave_matchmaking_queue'); } catch (_) {}
@@ -1032,9 +1033,17 @@
     if (Number.isFinite(st.leftY)) onlineRenderTarget.leftY = st.leftY;
     if (Number.isFinite(st.rightY)) onlineRenderTarget.rightY = st.rightY;
     if (st.ball && Number.isFinite(st.ball.x) && Number.isFinite(st.ball.y)) {
-      onlineRenderTarget.x = st.ball.x; onlineRenderTarget.y = st.ball.y;
-      if (Number.isFinite(st.ball.vx)) onlineRenderTarget.vx = st.ball.vx;
-      if (Number.isFinite(st.ball.vy)) onlineRenderTarget.vy = st.ball.vy;
+      const vx = Number.isFinite(st.ball.vx) ? st.ball.vx : 0;
+      const vy = Number.isFinite(st.ball.vy) ? st.ball.vy : 0;
+      // Predict only the short time a packet spent travelling. This compensates
+      // for network delay without building up a queue of old ball positions.
+      const packetAgeMs = Number.isFinite(st.sentAt)
+        ? Math.max(0, Math.min(55, Date.now() - st.sentAt)) : 0;
+      const ageFrames = packetAgeMs / 16.667;
+      onlineRenderTarget.x = clamp(st.ball.x + vx * ageFrames, 0, W);
+      onlineRenderTarget.y = clamp(st.ball.y + vy * ageFrames, 0, H);
+      onlineRenderTarget.vx = vx;
+      onlineRenderTarget.vy = vy;
     }
     if (Number.isFinite(st.leftPoints)) leftPoints = st.leftPoints;
     if (Number.isFinite(st.rightPoints)) rightPoints = st.rightPoints;
@@ -1061,16 +1070,26 @@
       hideOverlay();
     }
   }
-  // Avoid piling up old realtime messages if a connection is slow. For state/input,
-  // the next animation frame will send a fresh snapshot after the current send finishes.
+  // Coalesce outgoing updates: while a send is in flight, keep only the newest
+  // payload for that event, then send it immediately. This avoids both stale packet
+  // queues and the old behaviour of silently dropping every update during a send.
   const onlineSendBusy = new Set();
+  const onlinePendingPayload = new Map();
   async function broadcastOnline(event, payload) {
-    if (!onlineChannel || !onlineActive || onlineSendBusy.has(event)) return;
+    if (!onlineChannel || !onlineActive) return;
+    onlinePendingPayload.set(event, payload);
+    if (onlineSendBusy.has(event)) return;
     onlineSendBusy.add(event);
     try {
-      await onlineChannel.send({ type: 'broadcast', event, payload });
-    } catch (_) {
-      // A missed snapshot is preferable to queuing stale positions and causing lag.
+      while (onlineChannel && onlineActive && onlinePendingPayload.has(event)) {
+        const latestPayload = onlinePendingPayload.get(event);
+        onlinePendingPayload.delete(event);
+        try {
+          await onlineChannel.send({ type: 'broadcast', event, payload: latestPayload });
+        } catch (_) {
+          // Realtime can briefly fail; later fresh snapshots will recover the display.
+        }
+      }
     } finally {
       onlineSendBusy.delete(event);
     }

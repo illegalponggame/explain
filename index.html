@@ -69,6 +69,9 @@
   .achievement-preview-card button { margin-top:14px; padding:10px 18px; border:2px solid #fff; background:#222; color:#fff; font:900 1rem 'Courier New',monospace; cursor:pointer; }
   @keyframes achievement-preview-pop { from{transform:scale(.65);opacity:0} to{transform:scale(1);opacity:1} }
   #achievementConfetti { position:fixed; inset:0; width:100%; height:100%; z-index:1100; pointer-events:none; }
+  #impossibleGlitchCanvas { position:fixed; inset:0; width:100%; height:100%; z-index:1150; pointer-events:none; image-rendering:pixelated; }
+  .impossible-glitch-card { animation:impossible-glitch-jitter .075s steps(2,end) infinite; text-shadow:3px 0 #ff1744,-3px 0 #00e5ff,0 3px #fff; }
+  @keyframes impossible-glitch-jitter { 0%{transform:translate(0,0) skewX(0)} 25%{transform:translate(-3px,1px) skewX(-2deg)} 50%{transform:translate(3px,-1px) skewX(2deg)} 75%{transform:translate(-1px,-2px) skewX(-1deg)} 100%{transform:translate(0,0) skewX(0)} }
   .achievement-toast { position:fixed; left:18px; bottom:18px; z-index:1200; width:min(360px,calc(100vw - 36px)); padding:14px 16px; border:3px solid #fff; background:#101010; color:#fff; box-shadow:6px 6px 0 #333; font-family:'Courier New',monospace; transform:translateY(150%); opacity:0; pointer-events:none; }
   .achievement-toast.show { animation:achievement-toast-in 5.2s ease forwards; }
   .achievement-toast strong { display:block; color:#ffcf55; margin-bottom:5px; font-size:1rem; }
@@ -434,6 +437,7 @@
     </section>
   </div>
   <canvas id="achievementConfetti" aria-hidden="true"></canvas>
+  <canvas id="impossibleGlitchCanvas" aria-hidden="true"></canvas>
   <div id="achievementToast" class="achievement-toast" role="status" aria-live="polite"><strong>🏆 ACHIEVEMENT UNLOCKED!</strong><span>Congrats, you did it!</span></div>
   <header>
     <div class="eyebrow">Retro • Neon • Arcade</div>
@@ -1628,6 +1632,109 @@
   const previewImpossibleAchievementBtn = document.getElementById('previewImpossibleAchievementBtn');
   const impossibleAchievementPreview = document.getElementById('impossibleAchievementPreview');
   const closeImpossiblePreviewBtn = document.getElementById('closeImpossiblePreviewBtn');
+  const impossibleGlitchCanvas = document.getElementById('impossibleGlitchCanvas');
+  let impossibleGlitchActive = false;
+  let impossibleGlitchFrame = 0;
+  let impossibleGlitchStartedAt = 0;
+  let impossibleGlitchAudio = null;
+  let impossibleGlitchLastSound = 0;
+  let impossibleGlitchLastSpark = 0;
+  function playImpossibleGlitchSound(now) {
+    if (!impossibleGlitchActive || now - impossibleGlitchLastSound < 75 + Math.random() * 150) return;
+    impossibleGlitchLastSound = now;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!impossibleGlitchAudio) impossibleGlitchAudio = new AudioCtx();
+      const audio = impossibleGlitchAudio;
+      if (audio.state === 'suspended') audio.resume();
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      const start = audio.currentTime;
+      osc.type = Math.random() < .6 ? 'square' : 'sawtooth';
+      osc.frequency.setValueAtTime(90 + Math.random() * 1500, start);
+      osc.frequency.exponentialRampToValueAtTime(45 + Math.random() * 260, start + .045);
+      gain.gain.setValueAtTime(.0001, start);
+      gain.gain.exponentialRampToValueAtTime(.035 + Math.random() * .035, start + .006);
+      gain.gain.exponentialRampToValueAtTime(.0001, start + .055 + Math.random() * .06);
+      osc.connect(gain); gain.connect(audio.destination);
+      osc.start(start); osc.stop(start + .13);
+      osc.onended = () => { try { osc.disconnect(); gain.disconnect(); } catch (_) {} };
+    } catch (_) {}
+  }
+  function startImpossibleGlitchEffect() {
+    if (!impossibleGlitchCanvas) return;
+    stopImpossibleGlitchEffect();
+    impossibleGlitchActive = true;
+    impossibleGlitchStartedAt = performance.now();
+    impossibleGlitchLastSound = 0;
+    impossibleGlitchLastSpark = 0;
+    const canvas = impossibleGlitchCanvas;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { impossibleGlitchActive = false; return; }
+    // Render at a tiny internal resolution and scale with nearest-neighbour for chunky pixels.
+    const resize = () => {
+      canvas.width = Math.max(80, Math.ceil(window.innerWidth / 7));
+      canvas.height = Math.max(60, Math.ceil(window.innerHeight / 7));
+      ctx.imageSmoothingEnabled = false;
+      canvas.style.width = '100%'; canvas.style.height = '100%';
+    };
+    resize();
+    const frame = (now) => {
+      if (!impossibleGlitchActive) return;
+      const elapsed = now - impossibleGlitchStartedAt;
+      const intense = elapsed < 1550;
+      if (!intense) { const glitchCard = impossibleAchievementPreview && impossibleAchievementPreview.querySelector('.achievement-preview-card'); if (glitchCard) glitchCard.classList.remove('impossible-glitch-card'); }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (intense) {
+        // Brief full-screen corrupted signal: chunky blocks, torn scan bands and RGB slices.
+        if (Math.random() < .88) {
+          ctx.fillStyle = Math.random() < .5 ? 'rgba(255,0,65,.16)' : 'rgba(0,240,255,.14)';
+          ctx.fillRect(0, Math.random() * canvas.height, canvas.width, 1 + Math.random() * 9);
+        }
+        for (let i = 0, n = 18 + Math.random() * 30; i < n; i++) {
+          const x = Math.random() * canvas.width, y = Math.random() * canvas.height;
+          const w = 2 + Math.random() * (canvas.width * .23), h = 1 + Math.random() * 5;
+          ctx.fillStyle = ['rgba(255,255,255,.85)','rgba(255,0,70,.85)','rgba(0,240,255,.85)','rgba(255,207,85,.8)'][Math.floor(Math.random()*4)];
+          ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
+        }
+        if (Math.random() < .42) {
+          ctx.fillStyle = 'rgba(0,0,0,.8)';
+          ctx.fillRect(0, Math.random() * canvas.height, canvas.width, 2 + Math.random() * 13);
+        }
+        playImpossibleGlitchSound(now);
+      } else {
+        // After the big burst disappears, leave intermittent tiny pixel sparks until dismissed.
+        if (now - impossibleGlitchLastSpark > 70 + Math.random() * 280) {
+          impossibleGlitchLastSpark = now;
+          const x = Math.random() * canvas.width, y = Math.random() * canvas.height;
+          const colors = ['#fff','#ff1744','#00e5ff','#ffcf55'];
+          for (let i=0; i<2+Math.floor(Math.random()*5); i++) {
+            ctx.fillStyle = colors[Math.floor(Math.random()*colors.length)];
+            ctx.fillRect(Math.floor(x + (Math.random()-.5)*16), Math.floor(y + (Math.random()-.5)*12), 1+Math.floor(Math.random()*3), 1+Math.floor(Math.random()*3));
+          }
+          if (Math.random() < .24) playImpossibleGlitchSound(now);
+        }
+      }
+      impossibleGlitchFrame = requestAnimationFrame(frame);
+    };
+    impossibleGlitchFrame = requestAnimationFrame(frame);
+  }
+  function stopImpossibleGlitchEffect() {
+    impossibleGlitchActive = false;
+    if (impossibleGlitchFrame) cancelAnimationFrame(impossibleGlitchFrame);
+    impossibleGlitchFrame = 0;
+    if (impossibleGlitchCanvas) {
+      const ctx = impossibleGlitchCanvas.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, impossibleGlitchCanvas.width, impossibleGlitchCanvas.height);
+    }
+    const glitchCard = impossibleAchievementPreview && impossibleAchievementPreview.querySelector('.achievement-preview-card');
+    if (glitchCard) glitchCard.classList.remove('impossible-glitch-card');
+    if (impossibleGlitchAudio) {
+      try { impossibleGlitchAudio.close(); } catch (_) {}
+      impossibleGlitchAudio = null;
+    }
+  }
   function refreshAchievementUI() {
     if (impossibleAchievementState) impossibleAchievementState.textContent = completedImpossible ? '✓ UNLOCKED' : '🔒 LOCKED';
     if (impossibleAchievementRow) impossibleAchievementRow.classList.toggle('unlocked', completedImpossible);
@@ -1645,10 +1752,16 @@
   }
   if (achievementsOpenBtn) achievementsOpenBtn.addEventListener('click', openAchievements);
   function closeFinallyPreview() { if (finallyAchievementPreview) finallyAchievementPreview.classList.add('hidden'); }
-  function closeImpossiblePreview() { if (impossibleAchievementPreview) impossibleAchievementPreview.classList.add('hidden'); }
+  function closeImpossiblePreview() {
+    if (impossibleAchievementPreview) impossibleAchievementPreview.classList.add('hidden');
+    stopImpossibleGlitchEffect();
+  }
   function previewImpossibleCelebration() {
     closeAchievements();
     if (impossibleAchievementPreview) impossibleAchievementPreview.classList.remove('hidden');
+    startImpossibleGlitchEffect();
+    const glitchCard = impossibleAchievementPreview && impossibleAchievementPreview.querySelector('.achievement-preview-card');
+    if (glitchCard) glitchCard.classList.add('impossible-glitch-card');
     celebrateAchievement();
     showAchievementToast('🏆 COMPLETED THE IMPOSSIBLE!', 'You beat Medium Bot first to 3 with the Laggy Paddle! (Preview only)');
     // Preview is visual only: deliberately do not change completedImpossible or localStorage.
@@ -1694,6 +1807,7 @@
     try { localStorage.setItem(IMPOSSIBLE_ACHIEVEMENT_KEY, 'unlocked'); } catch (_) {}
     refreshAchievementUI();
     celebrateAchievement();
+    startImpossibleGlitchEffect();
     showOverlay('🏆 COMPLETED THE IMPOSSIBLE! 🏆', 'Achievement unlocked! You beat Medium Bot first to 3 with the Laggy Paddle equipped! 🎉', 'Awesome!');
     ui.status.textContent = '🏆 ACHIEVEMENT UNLOCKED: COMPLETED THE IMPOSSIBLE!';
     return true;
@@ -3066,6 +3180,7 @@
   ui.start.addEventListener('click', startGame);
 
   ui.overlayStart.addEventListener('click', () => {
+    stopImpossibleGlitchEffect();
     if (paused && running) {
       pauseGame();
     } else if (gameOver) {

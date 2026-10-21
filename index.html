@@ -392,9 +392,37 @@
     .scoreboard .number { font-size:clamp(1.4rem,6vw,2.4rem); }
   }
 
+
+/* Secret game launcher and Special Flappy Bird */
+.secret-open-btn{position:fixed;right:12px;bottom:12px;z-index:10020;background:#080808;color:#bcbcbc;border:1px dashed #777;padding:8px 11px;font:900 11px 'Courier New',monospace;letter-spacing:1px;cursor:pointer;opacity:.72}
+.secret-open-btn:hover{opacity:1;color:#fff;border-color:#fff}
+.game-hub{position:fixed;inset:0;z-index:10030;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.97);color:#fff;font-family:'Courier New',monospace;overflow:auto}
+.game-hub.open{display:flex}
+.game-hub-panel{width:min(900px,100%);border:3px solid #eee;background:#080808;padding:clamp(18px,4vw,34px);box-shadow:0 0 0 6px #171717,0 0 32px #555}
+.game-hub h1{font-size:clamp(1.8rem,5vw,3rem);text-align:center;margin:0 0 8px;letter-spacing:3px}
+.game-hub-sub{text-align:center;color:#aaa;margin:0 0 24px}
+.game-hub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.game-choice{display:flex;flex-direction:column;gap:12px;min-width:0;text-align:left;color:#fff;background:#111;border:2px solid #666;padding:14px;font:inherit;cursor:pointer;transition:transform .12s,border-color .12s}
+.game-choice:hover,.game-choice:focus-visible{border-color:#fff;transform:translateY(-2px);outline:none}
+.game-choice strong{font-size:clamp(1.05rem,2.8vw,1.5rem)}
+.game-choice small{color:#bbb;line-height:1.5}
+.game-preview{height:170px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #555;background:#070707}
+.pong-preview{font-size:clamp(2rem,5vw,3.5rem);font-weight:900;letter-spacing:3px;text-shadow:3px 3px #555}
+.flappy-preview{position:relative;width:100%;height:100%;background:linear-gradient(#70c5ce 0 80%,#74bf2e 80% 84%,#d6b35a 84%);overflow:hidden;image-rendering:pixelated}
+.flappy-preview:before{content:' ';position:absolute;z-index:2;left:18%;top:23%;width:34px;height:26px;background:#f7d64a;border:3px solid #8e6126;box-shadow:8px 1px 0 -2px #fff,12px 8px 0 -3px #111,28px 7px 0 -2px #f28b2d}
+.flappy-preview:after{content:' ';position:absolute;right:13%;top:0;width:42px;height:100%;background:linear-gradient(#73bf2e 0 36%,#286b1d 36% 42%,transparent 42% 60%,#73bf2e 60% 100%);border-left:4px solid #286b1d;border-right:4px solid #286b1d;box-shadow:inset 10px 0 #9be34c}
+.game-hub-close{display:block;margin:22px auto 0;background:#111;border:1px solid #888;color:#fff;padding:10px 18px;font:inherit;cursor:pointer}
+#specialFlappyView{display:none;position:fixed;inset:0;z-index:10010;background:#70c5ce;align-items:center;justify-content:center;flex-direction:column;padding:16px;font-family:'Courier New',monospace}
+#specialFlappyView.active{display:flex}
+#specialFlappyView h1{margin:0 0 10px;color:#fff;font-size:clamp(1.2rem,4vw,2rem);text-shadow:3px 3px #398b9a;letter-spacing:2px;text-align:center}
+#specialFlappyCanvas{display:block;width:min(960px,96vw);height:auto;max-height:78vh;aspect-ratio:16/9;border:4px solid #fff;box-shadow:0 0 0 4px #398b9a;image-rendering:pixelated;touch-action:manipulation}
+.flappy-controls{color:#fff;text-align:center;font-weight:bold;text-shadow:2px 2px #398b9a;margin:10px 0 0}
+@media(max-width:600px){.game-hub-grid{grid-template-columns:1fr}.game-preview{height:120px}.game-hub{padding:10px}.game-hub-panel{padding:16px}}
+
 </style>
 </head>
 <body>
+<div id="illegalPongView">
 <main class="app">
   <div class="coin-display" aria-label="Your coins"><span class="coin-icon">🪙</span><span>COINS</span><span id="coinCount">0</span></div>
   <button id="achievementsOpenBtn" class="achievements-open" type="button" aria-haspopup="dialog" aria-expanded="false">🏆 Achievements</button>
@@ -629,8 +657,183 @@
       </div>
     </section>
 </main>
+</div>
+
+<button id="secretOpenBtn" class="secret-open-btn" type="button" aria-haspopup="dialog" aria-expanded="false">DO NOT OPEN</button>
+<section id="gameHub" class="game-hub" role="dialog" aria-modal="true" aria-labelledby="gameHubTitle">
+  <div class="game-hub-panel">
+    <h1 id="gameHubTitle">SECRET GAME ROOM</h1>
+    <p class="game-hub-sub">CHOOSE A GAME • 2 GAMES AVAILABLE</p>
+    <div class="game-hub-grid">
+      <button class="game-choice" type="button" data-open-game="pong">
+        <div class="game-preview"><div class="pong-preview">ILLEGAL<br>PONG</div></div>
+        <strong>ILLEGAL PONG</strong>
+        <small>Retro paddle battles. Play against the CPU or another player.</small>
+      </button>
+      <button class="game-choice" type="button" data-open-game="flappy">
+        <div class="game-preview"><div class="flappy-preview"></div></div>
+        <strong>SPECIAL FLAPPY BIRD</strong>
+        <small>Fly through green pipes. Press SPACE, click, or tap to flap.</small>
+      </button>
+    </div>
+    <button id="closeGameHubBtn" class="game-hub-close" type="button">CLOSE GAME ROOM</button>
+  </div>
+</section>
+<section id="specialFlappyView" aria-label="Special Flappy Bird game">
+  <h1>SPECIAL FLAPPY BIRD</h1>
+  <canvas id="specialFlappyCanvas" width="960" height="540" aria-label="Flappy Bird game area"></canvas>
+  <p class="flappy-controls">SPACE / CLICK / TAP TO FLAP • CLICK AFTER GAME OVER TO RESTART</p>
+</section>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(() => {
+  const secretBtn = document.getElementById('secretOpenBtn');
+  const hub = document.getElementById('gameHub');
+  const closeHubBtn = document.getElementById('closeGameHubBtn');
+  const pongView = document.getElementById('illegalPongView');
+  const flappyView = document.getElementById('specialFlappyView');
+  const canvas = document.getElementById('specialFlappyCanvas');
+  const ctx = canvas.getContext('2d');
+  let hubReturnGame = 'pong';
+  let flappyFrame = 0, flappyRunning = false, flappyOver = false;
+  let bird = { x: 230, y: 250, vy: 0, rot: 0 };
+  let pipes = [], flappyScore = 0, flappyBest = 0, lastPipeAt = 0;
+  const gravity = 0.34, flapPower = -6.3, pipeW = 82, pipeGap = 168;
+
+  function openHub() {
+    hubReturnGame = flappyView.classList.contains('active') ? 'flappy' : 'pong';
+    flappyView.classList.remove('active');
+    pongView.style.display = 'none';
+    hub.classList.add('open');
+    secretBtn.setAttribute('aria-expanded', 'true');
+    secretBtn.style.display = 'none';
+  }
+  function closeHub() {
+    hub.classList.remove('open');
+    secretBtn.setAttribute('aria-expanded', 'false');
+    secretBtn.style.display = 'block';
+    if (hubReturnGame === 'flappy') {
+      pongView.style.display = 'none'; flappyView.classList.add('active'); startFlappyLoop();
+    } else {
+      flappyView.classList.remove('active'); pongView.style.display = '';
+    }
+  }
+  function chooseGame(which) {
+    hubReturnGame = which;
+    hub.classList.remove('open');
+    secretBtn.style.display = 'block';
+    secretBtn.setAttribute('aria-expanded', 'false');
+    if (which === 'flappy') {
+      pongView.style.display = 'none'; flappyView.classList.add('active');
+      resetFlappy(); startFlappyLoop();
+    } else {
+      flappyView.classList.remove('active'); pongView.style.display = '';
+    }
+  }
+  secretBtn.addEventListener('click', openHub);
+  closeHubBtn.addEventListener('click', closeHub);
+  hub.querySelectorAll('[data-open-game]').forEach(button => button.addEventListener('click', () => chooseGame(button.dataset.openGame)));
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && hub.classList.contains('open')) closeHub();
+    if ((event.code === 'Space' || event.key === 'ArrowUp') && flappyView.classList.contains('active')) { event.preventDefault(); flap(); }
+  });
+
+  function resetFlappy() {
+    bird = { x: 230, y: 250, vy: 0, rot: 0 };
+    pipes = []; flappyScore = 0; flappyOver = false; flappyRunning = true; lastPipeAt = 0;
+    pipes.push({ x: 620, gapY: 245, scored: false });
+    drawFlappy();
+  }
+  function flap() {
+    if (flappyOver) { resetFlappy(); return; }
+    if (!flappyRunning) { resetFlappy(); }
+    bird.vy = flapPower;
+  }
+  canvas.addEventListener('pointerdown', event => { event.preventDefault(); flap(); });
+  function pixelRect(x,y,w,h,fill,stroke=null,line=1) {
+    ctx.fillStyle=fill; ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));
+    if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=line;ctx.strokeRect(Math.round(x)+.5,Math.round(y)+.5,Math.round(w)-1,Math.round(h)-1);}
+  }
+  function drawFlappy() {
+    const W=canvas.width,H=canvas.height, groundY=H-62;
+    pixelRect(0,0,W,H,'#70c5ce');
+    // Simple pixel clouds
+    [[100,95,1],[425,145,.8],[735,78,1.1]].forEach(([x,y,k])=>{
+      pixelRect(x,y,66*k,18*k,'#fff'); pixelRect(x+14*k,y-12*k,30*k,15*k,'#fff'); pixelRect(x+40*k,y-5*k,27*k,11*k,'#fff');
+    });
+    // Pipes, with chunky highlights and dark outlines
+    pipes.forEach(p=>{
+      const topH=p.gapY-pipeGap/2, bottomY=p.gapY+pipeGap/2;
+      pixelRect(p.x,0,pipeW,topH,'#73bf2e','#286b1d',5);
+      pixelRect(p.x-8,topH-26,pipeW+16,26,'#73bf2e','#286b1d',5);
+      pixelRect(p.x+12,0,9,Math.max(0,topH-28),'#9be34c');
+      pixelRect(p.x,bottomY,pipeW,H-bottomY-62,'#73bf2e','#286b1d',5);
+      pixelRect(p.x-8,bottomY,pipeW+16,26,'#73bf2e','#286b1d',5);
+      pixelRect(p.x+12,bottomY+30,9,Math.max(0,groundY-bottomY-34),'#9be34c');
+    });
+    // Ground and repeating retro stripes
+    pixelRect(0,groundY,W,16,'#ded895'); pixelRect(0,groundY+16,W,H-groundY-16,'#d6b35a');
+    for(let x=0;x<W;x+=36){pixelRect(x,groundY+16,18,9,'#c99545');pixelRect(x+18,groundY+25,18,9,'#c99545');}
+    pixelRect(0,groundY,W,5,'#74bf2e');
+    // Chunky pixel-art yellow bird inspired by the user's reference image
+    ctx.save(); ctx.translate(Math.round(bird.x),Math.round(bird.y)); ctx.rotate(Math.max(-.45,Math.min(.9,bird.rot)));
+    // Tail and stepped silhouette
+    pixelRect(-31,-5,9,10,'#f7d64a','#8e6126',2);
+    pixelRect(-26,-15,35,30,'#f7d64a','#8e6126',3);
+    pixelRect(-19,-20,23,5,'#f7d64a','#8e6126',2);
+    pixelRect(-18,15,23,5,'#f7d64a','#8e6126',2);
+    // Orange wing with a blocky highlight
+    pixelRect(-19,1,18,12,'#e9a52b','#8e6126',2);
+    pixelRect(-15,4,10,5,'#ffd65b');
+    // White eye, dark pupil, and orange beak
+    pixelRect(2,-13,12,12,'#fff','#8e6126',2);
+    pixelRect(8,-9,5,6,'#111');
+    pixelRect(12,-1,21,10,'#f28b2d','#8e4b1b',2);
+    pixelRect(16,2,13,3,'#ffd05b');
+    pixelRect(17,8,10,3,'#d96c20');
+    ctx.restore();
+    // Score with white outline like the classic arcade style
+    ctx.textAlign='center'; ctx.font='bold 56px Courier New'; ctx.lineWidth=7; ctx.strokeStyle='#426f76';
+    ctx.strokeText(String(flappyScore),W/2,75); ctx.fillStyle='#fff'; ctx.fillText(String(flappyScore),W/2,75);
+    if (!flappyRunning && !flappyOver) {
+      ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(0,0,W,H);
+      ctx.textAlign='center';ctx.font='bold 42px Courier New';ctx.fillStyle='#fff';ctx.strokeStyle='#4b7377';ctx.lineWidth=5;
+      ctx.strokeText('SPECIAL FLAPPY BIRD',W/2,220);ctx.fillText('SPECIAL FLAPPY BIRD',W/2,220);
+      ctx.font='bold 24px Courier New';ctx.strokeText('CLICK OR PRESS SPACE',W/2,280);ctx.fillText('CLICK OR PRESS SPACE',W/2,280);
+    }
+    if (flappyOver) {
+      ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(0,0,W,H);
+      ctx.textAlign='center';ctx.font='bold 52px Courier New';ctx.lineWidth=7;ctx.strokeStyle='#5e3322';ctx.fillStyle='#fff';
+      ctx.strokeText('GAME OVER',W/2,220);ctx.fillText('GAME OVER',W/2,220);
+      ctx.font='bold 26px Courier New';ctx.strokeText('SCORE: '+flappyScore,W/2,270);ctx.fillText('SCORE: '+flappyScore,W/2,270);
+      ctx.font='bold 20px Courier New';ctx.strokeText('CLICK TO PLAY AGAIN',W/2,325);ctx.fillText('CLICK TO PLAY AGAIN',W/2,325);
+    }
+  }
+  function endFlappy() { flappyOver=true;flappyRunning=false;flappyBest=Math.max(flappyBest,flappyScore);drawFlappy(); }
+  function tickFlappy() {
+    if (!flappyView.classList.contains('active')) { flappyFrame=0; return; }
+    if (flappyRunning && !flappyOver) {
+      const groundY=canvas.height-62;
+      bird.vy+=gravity; bird.y+=bird.vy; bird.rot=Math.min(.9,Math.max(-.5,bird.vy*.07));
+      if (!pipes.length || pipes[pipes.length-1].x < canvas.width-330) pipes.push({x:canvas.width+20,gapY:120+Math.random()*250,scored:false});
+      pipes.forEach(p=>{
+        p.x-=3.2;
+        if(!p.scored && p.x+pipeW<bird.x){p.scored=true;flappyScore++;}
+        const topH=p.gapY-pipeGap/2,bottomY=p.gapY+pipeGap/2;
+        if(bird.x+18>p.x-7 && bird.x-18<p.x+pipeW+7 && (bird.y-14<topH || bird.y+14>bottomY)) endFlappy();
+      });
+      pipes=pipes.filter(p=>p.x>-110);
+      if(bird.y-17<0 || bird.y+17>groundY) endFlappy();
+      drawFlappy();
+    }
+    flappyFrame=requestAnimationFrame(tickFlappy);
+  }
+  function startFlappyLoop(){ if(!flappyFrame) flappyFrame=requestAnimationFrame(tickFlappy); }
+  // Draw a start screen until the player begins.
+  flappyRunning=false; drawFlappy();
+})();
+</script>
 <script>
 (() => {
   // Music selector: Song 1 streams Lift Jam; Song 2 is embedded in this HTML.

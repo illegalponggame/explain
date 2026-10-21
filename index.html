@@ -1858,6 +1858,10 @@
       if (ui.status) ui.status.textContent = 'Leave Online Multiplayer before starting the challenge.';
       return;
     }
+    // Close the screen containing DO IT so the challenge match is immediately visible.
+    closeAchievements();
+    closeImpossiblePreview();
+    closeFinallyPreview();
     setMode('cpu');
     ui.difficulty.value = 'hard';
     ui.rightName.textContent = 'CPU (HARD)';

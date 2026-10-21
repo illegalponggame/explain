@@ -61,6 +61,9 @@
   .achievement-row.unlocked .achievement-icon { filter:none; }
   .achievement-description { color:#bbb; line-height:1.5; font-size:.9rem; }
   .achievement-preview-btn { margin-top:12px; padding:10px 13px; border:2px solid #ffcf55; background:#171717; color:#ffcf55; font:900  .95rem 'Courier New',monospace; cursor:pointer; box-shadow:3px 3px 0 #333; }
+  .impossible-do-btn { display:block; width:100%; margin-top:12px; padding:12px 14px; border:3px solid #777; background:#444; color:#bbb; font:900 1rem 'Courier New',monospace; letter-spacing:.08em; cursor:not-allowed; box-shadow:4px 4px 0 #222; }
+  .impossible-do-btn.ready { border-color:#ffcf55; background:#ffcf55; color:#111; cursor:pointer; }
+  .impossible-do-btn.ready:hover { background:#ffe58a; border-color:#ffe58a; }
   .achievement-preview-screen { position:fixed; inset:0; z-index:1050; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.88); text-align:center; font-family:'Courier New',monospace; }
   .achievement-preview-screen.hidden { display:none; }
   .achievement-preview-card { width:min(100%,720px); border:4px solid #ffcf55; padding:clamp(22px,5vw,48px); background:#101010; box-shadow:10px 10px 0 #333; animation:achievement-preview-pop .45s cubic-bezier(.2,1.4,.4,1) both; }
@@ -405,7 +408,8 @@
         <div>
           <strong>COMPLETED THE IMPOSSIBLE</strong>
           <div id="impossibleAchievementState" style="margin:5px 0;color:#ffcf55;font-weight:900">🔒 LOCKED</div>
-          <div class="achievement-description">To unlock this achievement, beat Medium Bot in a First to 3 match while having the Laggy Paddle accessory equipped on your left paddle.</div>
+          <div class="achievement-description">To unlock this achievement, press DO IT and beat Hard Bot in a special First to 2 challenge with the Laggy Paddle equipped on your left paddle.</div>
+          <button id="doImpossibleChallengeBtn" class="impossible-do-btn" type="button" disabled>DO IT — BUY LAGGY PADDLE FIRST</button>
           <button id="previewImpossibleAchievementBtn" class="achievement-preview-btn owner-only-preview" type="button" hidden>🎊 Preview Celebration</button>
         </div>
       </div>
@@ -424,7 +428,7 @@
     <section class="achievement-preview-card">
       <div style="font-size:clamp(2rem,7vw,4rem);margin-bottom:12px">🏆 🎉 🏆</div>
       <h2 id="impossiblePreviewTitle">COMPLETED THE IMPOSSIBLE!</h2>
-      <p>Incredible! You beat Medium Bot first to 3 with the Laggy Paddle equipped and unlocked the achievement! 🎊</p>
+      <p>Incredible! You beat Hard Bot first to 2 in the special challenge with the Laggy Paddle equipped and unlocked the achievement! 🎊</p>
       <p style="color:#ffcf55;font-weight:900">CELEBRATION PREVIEW — THIS DOES NOT UNLOCK THE ACHIEVEMENT</p>
       <button id="closeImpossiblePreviewBtn" type="button">Awesome! Close Preview</button>
     </section>
@@ -1417,12 +1421,21 @@
       shop.appendChild(row);
     });
   }
+  function updateImpossibleChallengeButton() {
+    if (!doImpossibleChallengeBtn) return;
+    const owned = !!ownedAccessories.laggy;
+    doImpossibleChallengeBtn.disabled = !owned;
+    doImpossibleChallengeBtn.classList.toggle('ready', owned);
+    doImpossibleChallengeBtn.textContent = owned ? 'DO IT — START HARD MODE CHALLENGE' : 'DO IT — BUY LAGGY PADDLE FIRST';
+    doImpossibleChallengeBtn.setAttribute('aria-disabled', owned ? 'false' : 'true');
+  }
   function setPaddleAccessory(side, key) {
     if (key !== 'none' && !ownedAccessories[key]) return;
     equippedAccessory[side] = key;
     const select = side === 'left' ? leftAccessory : rightAccessory;
     if (select) select.value = key;
     refreshAccessoryOptions();
+    updateImpossibleChallengeButton();
     if (accessoryShopStatus) accessoryShopStatus.textContent = key === 'none'
       ? `Accessory unequipped from the ${side} paddle.`
       : `${ACCESSORIES[key]} equipped on the ${side} paddle.`;
@@ -1439,6 +1452,7 @@
     try { localStorage.setItem(COIN_STORAGE_KEY, String(coins)); } catch (_) {}
     updateCoinDisplay();
     refreshAccessoryOptions();
+    updateImpossibleChallengeButton();
     if (accessoryShopStatus) accessoryShopStatus.textContent = `Bought ${ACCESSORIES[key]}! Use EQUIP LEFT or EQUIP RIGHT here to put it on a paddle.`;
   }
   if (ownerMode && ownerCodeStatus) ownerCodeStatus.textContent = '👑 OWNER MODE UNLOCKED — infinite coins and free accessories!';
@@ -1636,12 +1650,14 @@
   let completedFinally = false;
   try { completedFinally = localStorage.getItem(FINALLY_ACHIEVEMENT_KEY) === 'unlocked'; } catch (_) {}
   let completedImpossible = false;
+  let impossibleChallengeActive = false;
   try { completedImpossible = localStorage.getItem(IMPOSSIBLE_ACHIEVEMENT_KEY) === 'unlocked'; } catch (_) {}
   const achievementsOpenBtn = document.getElementById('achievementsOpenBtn');
   const achievementsModal = document.getElementById('achievementsModal');
   const achievementsCloseBtn = document.getElementById('achievementsCloseBtn');
   const impossibleAchievementRow = document.getElementById('impossibleAchievementRow');
   const impossibleAchievementState = document.getElementById('impossibleAchievementState');
+  const doImpossibleChallengeBtn = document.getElementById('doImpossibleChallengeBtn');
   const finallyAchievementRow = document.getElementById('finallyAchievementRow');
   const finallyAchievementState = document.getElementById('finallyAchievementState');
   const achievementToast = document.getElementById('achievementToast');
@@ -1755,6 +1771,7 @@
       impossibleGlitchAudio = null;
     }
   }
+  updateImpossibleChallengeButton();
   function refreshAchievementUI() {
     if (impossibleAchievementState) impossibleAchievementState.textContent = completedImpossible ? '✓ UNLOCKED' : '🔒 LOCKED';
     if (impossibleAchievementRow) impossibleAchievementRow.classList.toggle('unlocked', completedImpossible);
@@ -1783,10 +1800,11 @@
     const glitchCard = impossibleAchievementPreview && impossibleAchievementPreview.querySelector('.achievement-preview-card');
     if (glitchCard) glitchCard.classList.add('impossible-glitch-card');
     celebrateAchievement();
-    showAchievementToast('🏆 COMPLETED THE IMPOSSIBLE!', 'You beat Medium Bot first to 3 with the Laggy Paddle! (Preview only)');
+    showAchievementToast('🏆 COMPLETED THE IMPOSSIBLE!', 'You beat Hard Bot first to 2 with the Laggy Paddle! (Preview only)');
     // Preview is visual only: deliberately do not change completedImpossible or localStorage.
   }
   if (previewImpossibleAchievementBtn) previewImpossibleAchievementBtn.addEventListener('click', previewImpossibleCelebration);
+  if (doImpossibleChallengeBtn) doImpossibleChallengeBtn.addEventListener('click', startImpossibleChallenge);
   if (closeImpossiblePreviewBtn) closeImpossiblePreviewBtn.addEventListener('click', closeImpossiblePreview);
   if (impossibleAchievementPreview) impossibleAchievementPreview.addEventListener('click', event => { if (event.target === impossibleAchievementPreview) closeImpossiblePreview(); });
   function previewFinallyCelebration() {
@@ -1820,15 +1838,61 @@
     window.addEventListener('resize', resize, {once:true});
     requestAnimationFrame(frame);
   }
+  function restorePublicMatchSettings() {
+    const challengeOption = ui.winScore.querySelector('option[data-impossible-challenge="true"]');
+    if (challengeOption) challengeOption.remove();
+    if (Number(ui.winScore.value) === 2) ui.winScore.value = '7';
+    ui.winScore.disabled = mode === 'cpu' && ui.difficulty.value === 'impossible';
+  }
+  function cancelImpossibleChallenge() {
+    if (!impossibleChallengeActive) return;
+    impossibleChallengeActive = false;
+    restorePublicMatchSettings();
+  }
+  function startImpossibleChallenge() {
+    if (!ownedAccessories.laggy) {
+      if (ui.status) ui.status.textContent = 'Buy the Laggy Paddle in Settings before starting this challenge.';
+      return;
+    }
+    if (onlineActive || mode === 'online') {
+      if (ui.status) ui.status.textContent = 'Leave Online Multiplayer before starting the challenge.';
+      return;
+    }
+    setMode('cpu');
+    ui.difficulty.value = 'hard';
+    ui.rightName.textContent = 'CPU (HARD)';
+    ui.difficulty.disabled = false;
+    let challengeOption = ui.winScore.querySelector('option[data-impossible-challenge="true"]');
+    if (!challengeOption) {
+      challengeOption = document.createElement('option');
+      challengeOption.value = '2';
+      challengeOption.textContent = 'Challenge: First to 2';
+      challengeOption.dataset.impossibleChallenge = 'true';
+      ui.winScore.appendChild(challengeOption);
+    }
+    ui.winScore.value = '2';
+    ui.winScore.disabled = true;
+    setPaddleAccessory('left', 'laggy');
+    resetGame(false);
+    impossibleChallengeActive = true;
+    ui.status.textContent = 'COMPLETED THE IMPOSSIBLE challenge: beat Hard Bot first to 2 with the Laggy Paddle!';
+    startGame();
+  }
   function checkImpossibleAchievement(winner) {
-    const qualifies = winner === 'Player 1' && mode === 'cpu' && ui.difficulty.value === 'medium' && Number(ui.winScore.value) === 3 && equippedAccessory.left === 'laggy';
+    const qualifies = impossibleChallengeActive && winner === 'Player 1' && mode === 'cpu' &&
+      ui.difficulty.value === 'hard' && Number(ui.winScore.value) === 2 &&
+      equippedAccessory.left === 'laggy' && !!ownedAccessories.laggy;
+    if (impossibleChallengeActive) {
+      impossibleChallengeActive = false;
+      restorePublicMatchSettings();
+    }
     if (!qualifies || completedImpossible) return false;
     completedImpossible = true;
     try { localStorage.setItem(IMPOSSIBLE_ACHIEVEMENT_KEY, 'unlocked'); } catch (_) {}
     refreshAchievementUI();
     celebrateAchievement();
     startImpossibleGlitchEffect();
-    showOverlay('🏆 COMPLETED THE IMPOSSIBLE! 🏆', 'Achievement unlocked! You beat Medium Bot first to 3 with the Laggy Paddle equipped! 🎉', 'Awesome!');
+    showOverlay('🏆 COMPLETED THE IMPOSSIBLE! 🏆', 'Achievement unlocked! You beat Hard Bot first to 2 in the special challenge with the Laggy Paddle equipped! 🎉', 'Awesome!');
     ui.status.textContent = '🏆 ACHIEVEMENT UNLOCKED: COMPLETED THE IMPOSSIBLE!';
     return true;
   }
@@ -3106,6 +3170,7 @@
   }
 
   function setMode(nextMode) {
+    cancelImpossibleChallenge();
     if (onlineActive) { setOnlineStatus('Leave the online match before switching local modes.'); return; }
     mode = nextMode;
     if (mode === 'cpu' && ui.difficulty.value === 'impossible') ui.winScore.value = '3';
@@ -3218,6 +3283,7 @@
     pauseGame();
   });
   ui.restart.addEventListener('click', () => {
+    cancelImpossibleChallenge();
     if (onlineActive || mode === 'online') {
       setOnlineStatus('Restart is disabled during online matches. Finish the match or leave it first.');
       return;
@@ -3226,6 +3292,7 @@
   });
 
   ui.winScore.addEventListener('change', () => {
+    cancelImpossibleChallenge();
     if (mode === 'cpu' && ui.difficulty.value === 'impossible') {
       ui.winScore.value = '3';
     }
@@ -3242,6 +3309,7 @@
   });
 
   ui.difficulty.addEventListener('change', () => {
+    cancelImpossibleChallenge();
     if (mode === 'cpu' && ui.difficulty.value === 'impossible') ui.winScore.value = '3';
     powerUps = [];
     scheduleNextPowerUp();

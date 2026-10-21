@@ -31,7 +31,7 @@
     padding: 22px;
   }
 
-  .app { width: min(100%, 1000px); position: relative; }
+  .app { width: min(100%, 1200px); min-width: 0; position: relative; margin-inline: auto; }
 
   .coin-display {
     position: absolute; top: 0; right: 0; z-index: 5;
@@ -398,7 +398,7 @@
 .secret-open-btn:hover{opacity:1;color:#fff;border-color:#fff}
 .game-hub{position:fixed;inset:0;z-index:10030;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.97);color:#fff;font-family:'Courier New',monospace;overflow:auto}
 .game-hub.open{display:flex}
-.game-hub-panel{width:min(900px,100%);border:3px solid #eee;background:#080808;padding:clamp(18px,4vw,34px);box-shadow:0 0 0 6px #171717,0 0 32px #555}
+.game-hub-panel{width:min(1100px,100%);min-width:0;border:3px solid #eee;background:#080808;padding:clamp(18px,4vw,34px);box-shadow:0 0 0 6px #171717,0 0 32px #555}
 .game-hub h1{font-size:clamp(1.8rem,5vw,3rem);text-align:center;margin:0 0 8px;letter-spacing:3px}
 .game-hub-sub{text-align:center;color:#aaa;margin:0 0 24px}
 .game-hub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
@@ -415,7 +415,7 @@
 #specialFlappyView{display:none;position:fixed;inset:0;z-index:10010;background:#70c5ce;align-items:center;justify-content:center;flex-direction:column;padding:16px;font-family:'Courier New',monospace}
 #specialFlappyView.active{display:flex}
 #specialFlappyView h1{margin:0 0 10px;color:#fff;font-size:clamp(1.2rem,4vw,2rem);text-shadow:3px 3px #398b9a;letter-spacing:2px;text-align:center}
-#specialFlappyCanvas{display:block;width:min(960px,96vw);height:auto;max-height:78vh;aspect-ratio:16/9;border:4px solid #fff;box-shadow:0 0 0 4px #398b9a;image-rendering:pixelated;touch-action:manipulation}
+#specialFlappyCanvas{display:block;width:min(360px,88vw);height:min(70vh,640px);aspect-ratio:9/16;object-fit:contain;border:4px solid #fff;box-shadow:0 0 0 4px #398b9a;image-rendering:pixelated;touch-action:manipulation}
 .flappy-controls{color:#fff;text-align:center;font-weight:bold;text-shadow:2px 2px #398b9a;margin:10px 0 0}
 @media(max-width:600px){.game-hub-grid{grid-template-columns:1fr}.game-choice{grid-template-columns:105px minmax(0,1fr);column-gap:10px;padding:10px}.game-preview{height:94px}.game-choice strong{font-size:1rem}.game-choice small{font-size:.78rem}.game-hub{padding:10px}.game-hub-panel{padding:16px}}
 
@@ -681,7 +681,7 @@
 </section>
 <section id="specialFlappyView" aria-label="Special Flappy Bird game">
   <h1>SPECIAL FLAPPY BIRD</h1>
-  <canvas id="specialFlappyCanvas" width="960" height="540" aria-label="Flappy Bird game area"></canvas>
+  <canvas id="specialFlappyCanvas" width="360" height="640" aria-label="Special Flappy Bird game area"></canvas>
   <p class="flappy-controls">SPACE / CLICK / TAP TO FLAP • CLICK AFTER GAME OVER TO RESTART</p>
 </section>
 
@@ -697,9 +697,9 @@
   const ctx = canvas.getContext('2d');
   let hubReturnGame = 'pong';
   let flappyFrame = 0, flappyRunning = false, flappyOver = false;
-  let bird = { x: 230, y: 250, vy: 0, rot: 0 };
+  let bird = { x: 92, y: 285, vy: 0, rot: 0 };
   let pipes = [], flappyScore = 0, flappyBest = 0, lastPipeAt = 0;
-  const gravity = 0.34, flapPower = -6.3, pipeW = 82, pipeGap = 168;
+  const gravity = 0.27, flapPower = -5.0, pipeW = 58, pipeGap = 154;
 
   function openHub() {
     hubReturnGame = flappyView.classList.contains('active') ? 'flappy' : 'pong';
@@ -740,9 +740,9 @@
   });
 
   function resetFlappy() {
-    bird = { x: 230, y: 250, vy: 0, rot: 0 };
+    bird = { x: 92, y: 285, vy: 0, rot: 0 };
     pipes = []; flappyScore = 0; flappyOver = false; flappyRunning = true; lastPipeAt = 0;
-    pipes.push({ x: 620, gapY: 245, scored: false });
+    pipes.push({ x: 410, gapY: 300, scored: false });
     drawFlappy();
   }
   function flap() {
@@ -756,10 +756,10 @@
     if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=line;ctx.strokeRect(Math.round(x)+.5,Math.round(y)+.5,Math.round(w)-1,Math.round(h)-1);}
   }
   function drawFlappy() {
-    const W=canvas.width,H=canvas.height, groundY=H-62;
+    const W=canvas.width,H=canvas.height, groundY=H-82;
     pixelRect(0,0,W,H,'#70c5ce');
     // Simple pixel clouds
-    [[100,95,1],[425,145,.8],[735,78,1.1]].forEach(([x,y,k])=>{
+    [[38,100,.75],[215,165,.65],[265,70,.7]].forEach(([x,y,k])=>{
       pixelRect(x,y,66*k,18*k,'#fff'); pixelRect(x+14*k,y-12*k,30*k,15*k,'#fff'); pixelRect(x+40*k,y-5*k,27*k,11*k,'#fff');
     });
     // Pipes, with chunky highlights and dark outlines
@@ -773,28 +773,27 @@
       pixelRect(p.x+12,bottomY+30,9,Math.max(0,groundY-bottomY-34),'#9be34c');
     });
     // Ground and repeating retro stripes
-    pixelRect(0,groundY,W,16,'#ded895'); pixelRect(0,groundY+16,W,H-groundY-16,'#d6b35a');
-    for(let x=0;x<W;x+=36){pixelRect(x,groundY+16,18,9,'#c99545');pixelRect(x+18,groundY+25,18,9,'#c99545');}
-    pixelRect(0,groundY,W,5,'#74bf2e');
+    pixelRect(0,groundY,W,18,'#ded895'); pixelRect(0,groundY+18,W,H-groundY-18,'#d6b35a');
+    for(let x=0;x<W;x+=24){pixelRect(x,groundY+18,12,10,'#c99545');pixelRect(x+12,groundY+28,12,10,'#c99545');}
+    pixelRect(0,groundY,W,6,'#74bf2e');
     // Chunky pixel-art yellow bird inspired by the user's reference image
     ctx.save(); ctx.translate(Math.round(bird.x),Math.round(bird.y)); ctx.rotate(Math.max(-.45,Math.min(.9,bird.rot)));
     // Tail and stepped silhouette
-    pixelRect(-31,-5,9,10,'#f7d64a','#8e6126',2);
-    pixelRect(-26,-15,35,30,'#f7d64a','#8e6126',3);
-    pixelRect(-19,-20,23,5,'#f7d64a','#8e6126',2);
-    pixelRect(-18,15,23,5,'#f7d64a','#8e6126',2);
-    // Orange wing with a blocky highlight
-    pixelRect(-19,1,18,12,'#e9a52b','#8e6126',2);
-    pixelRect(-15,4,10,5,'#ffd65b');
-    // White eye, dark pupil, and orange beak
-    pixelRect(2,-13,12,12,'#fff','#8e6126',2);
-    pixelRect(8,-9,5,6,'#111');
-    pixelRect(12,-1,21,10,'#f28b2d','#8e4b1b',2);
-    pixelRect(16,2,13,3,'#ffd05b');
-    pixelRect(17,8,10,3,'#d96c20');
+    pixelRect(-25,-4,8,8,'#f7d64a','#8e6126',1);
+    pixelRect(-22,-12,27,24,'#f7d64a','#8e6126',2);
+    pixelRect(-15,-16,17,4,'#f7d64a','#8e6126',1);
+    pixelRect(-15,12,17,4,'#f7d64a','#8e6126',1);
+    // Flapping orange wing
+    pixelRect(-15,1,14,9,'#e9a52b','#8e6126',1);
+    pixelRect(-12,3,8,4,'#ffd65b');
+    // White eye, dark pupil, and short orange beak
+    pixelRect(1,-10,10,10,'#fff','#8e6126',1);
+    pixelRect(7,-7,4,5,'#111');
+    pixelRect(7,-1,19,8,'#f28b2d','#8e4b1b',1);
+    pixelRect(11,1,12,2,'#ffd05b');
     ctx.restore();
     // Score with white outline like the classic arcade style
-    ctx.textAlign='center'; ctx.font='bold 56px Courier New'; ctx.lineWidth=7; ctx.strokeStyle='#426f76';
+    ctx.textAlign='center'; ctx.font='bold 48px Courier New'; ctx.lineWidth=6; ctx.strokeStyle='#426f76';
     ctx.strokeText(String(flappyScore),W/2,75); ctx.fillStyle='#fff'; ctx.fillText(String(flappyScore),W/2,75);
     if (!flappyRunning && !flappyOver) {
       ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(0,0,W,H);
@@ -816,15 +815,15 @@
     if (flappyRunning && !flappyOver) {
       const groundY=canvas.height-62;
       bird.vy+=gravity; bird.y+=bird.vy; bird.rot=Math.min(.9,Math.max(-.5,bird.vy*.07));
-      if (!pipes.length || pipes[pipes.length-1].x < canvas.width-330) pipes.push({x:canvas.width+20,gapY:120+Math.random()*250,scored:false});
+      if (!pipes.length || pipes[pipes.length-1].x < canvas.width-205) pipes.push({x:canvas.width+12,gapY:175+Math.random()*245,scored:false});
       pipes.forEach(p=>{
-        p.x-=3.2;
+        p.x-=2.35;
         if(!p.scored && p.x+pipeW<bird.x){p.scored=true;flappyScore++;}
         const topH=p.gapY-pipeGap/2,bottomY=p.gapY+pipeGap/2;
-        if(bird.x+18>p.x-7 && bird.x-18<p.x+pipeW+7 && (bird.y-14<topH || bird.y+14>bottomY)) endFlappy();
+        if(bird.x+15>p.x-5 && bird.x-15<p.x+pipeW+5 && (bird.y-12<topH || bird.y+12>bottomY)) endFlappy();
       });
       pipes=pipes.filter(p=>p.x>-110);
-      if(bird.y-17<0 || bird.y+17>groundY) endFlappy();
+      if(bird.y-14<0 || bird.y+14>groundY) endFlappy();
       drawFlappy();
     }
     flappyFrame=requestAnimationFrame(tickFlappy);

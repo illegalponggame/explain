@@ -780,84 +780,326 @@
     if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=line;ctx.strokeRect(Math.round(x)+.5,Math.round(y)+.5,Math.round(w)-1,Math.round(h)-1);}
   }
   function drawFlappy() {
-    const W=canvas.width,H=canvas.height, groundY=H-82;
-    // Bright daytime pixel-art scene inspired by the supplied reference.
-    pixelRect(0,0,W,H,'#4dbcf0');
-    // Sun with stepped glow
-    pixelRect(272,105,46,46,'#fff39a'); pixelRect(264,113,62,30,'#fff39a');
-    pixelRect(258,121,74,14,'#8cdbf3'); pixelRect(280,97,30,62,'#8cdbf3');
-    // Distant layered mountains behind the city
-    ctx.fillStyle='#76bde7'; ctx.beginPath(); ctx.moveTo(0,420); ctx.lineTo(55,360); ctx.lineTo(92,390); ctx.lineTo(137,330); ctx.lineTo(183,384); ctx.lineTo(240,280); ctx.lineTo(288,350); ctx.lineTo(360,315); ctx.lineTo(360,510); ctx.lineTo(0,510); ctx.closePath(); ctx.fill();
-    ctx.fillStyle='#5da9df'; ctx.beginPath(); ctx.moveTo(0,454); ctx.lineTo(66,394); ctx.lineTo(111,425); ctx.lineTo(166,370); ctx.lineTo(213,420); ctx.lineTo(266,308); ctx.lineTo(310,385); ctx.lineTo(360,360); ctx.lineTo(360,520); ctx.lineTo(0,520); ctx.closePath(); ctx.fill();
-    // Tall mountain and a bright waterfall
-    ctx.fillStyle='#579bd3'; ctx.beginPath(); ctx.moveTo(155,415); ctx.lineTo(244,220); ctx.lineTo(326,415); ctx.closePath(); ctx.fill();
-    ctx.fillStyle='#68aee1'; ctx.beginPath(); ctx.moveTo(200,315); ctx.lineTo(244,220); ctx.lineTo(280,315); ctx.lineTo(255,302); ctx.lineTo(244,278); ctx.lineTo(231,307); ctx.closePath(); ctx.fill();
-    pixelRect(241,266,5,128,'#b9f4ff'); pixelRect(246,284,3,112,'#72d8ff'); pixelRect(238,325,3,68,'#e1fbff');
-    // Tiny distant birds that subtly animate as the scene scrolls in time
-    const birdT=(performance.now()/170)%390;
-    [[210,300],[229,286],[306,316],[20,250]].forEach(([bx,by],i)=>{const xx=(bx+birdT+i*24)%390-15; pixelRect(xx,by+(Math.floor(performance.now()/450+i)%2)*2,5,2,'#418fc9');pixelRect(xx+5,by-2+(Math.floor(performance.now()/450+i)%2)*2,5,2,'#418fc9');});
-    // City skyline and windows
-    const buildings=[[0,500,25,90],[28,465,18,125],[51,520,22,70],[77,480,28,110],[111,535,19,55],[135,490,25,100],[165,515,21,75],[191,470,24,120],[221,505,20,85],[246,480,28,110],[280,520,19,70],[303,455,25,135],[333,500,27,90]];
-    buildings.forEach(([x,y,w,h],i)=>{pixelRect(x,y,w,h,i%2?'#3988c5':'#438fc9');for(let wy=y+10;wy<y+h-5;wy+=15)for(let wx=x+5;wx<x+w-3;wx+=9)pixelRect(wx,wy,4,6,'#83c9ed');});
-    // Tree line, river and shore
-    pixelRect(0,590,W,7,'#4fae91'); pixelRect(0,597,W,18,'#35b9df'); pixelRect(0,615,W,groundY-615,'#1aa9d7');
-    for(let tx=0;tx<W;tx+=18){pixelRect(tx,575+(tx%3)*2,16,15,'#2caa67');pixelRect(tx+4,568+(tx%4),9,12,'#48bf70');}
-    for(let wx=12;wx<W;wx+=53)pixelRect(wx,606+(wx%3),18,2,'#8ce9f7');
-    // Soft pixel clouds drift gently across the sky
-    const cloudShift=(performance.now()/110)%390;
-    [[-28,185,.8],[178,235,.65],[285,180,.85],[45,310,.5]].forEach(([x,y,k])=>{const cx=(x+cloudShift)%400-35;pixelRect(cx,y,66*k,10*k,'#dff6ff');pixelRect(cx+13*k,y-11*k,28*k,15*k,'#eafaff');pixelRect(cx+39*k,y-5*k,28*k,11*k,'#dff6ff');});
-    // Pipes, with chunky highlights and dark outlines
-    pipes.forEach(p=>{
-      const topH=p.gapY-pipeGap/2, bottomY=p.gapY+pipeGap/2;
-      pixelRect(p.x,0,pipeW,topH,'#73bf2e','#286b1d',5);
-      pixelRect(p.x-8,topH-26,pipeW+16,26,'#73bf2e','#286b1d',5);
-      pixelRect(p.x+12,0,9,Math.max(0,topH-28),'#9be34c');
-      pixelRect(p.x,bottomY,pipeW,H-bottomY-62,'#73bf2e','#286b1d',5);
-      pixelRect(p.x-8,bottomY,pipeW+16,26,'#73bf2e','#286b1d',5);
-      pixelRect(p.x+12,bottomY+30,9,Math.max(0,groundY-bottomY-34),'#9be34c');
-    });
-    // Ground and repeating retro stripes
-    pixelRect(0,groundY,W,18,'#ded895'); pixelRect(0,groundY+18,W,H-groundY-18,'#d6b35a');
-    for(let x=0;x<W;x+=24){pixelRect(x,groundY+18,12,10,'#c99545');pixelRect(x+12,groundY+28,12,10,'#c99545');}
-    pixelRect(0,groundY,W,6,'#74bf2e');
-    // Chunky pixel-art yellow bird inspired by the user's reference image
-    ctx.save(); ctx.translate(Math.round(bird.x),Math.round(bird.y)); ctx.rotate(Math.max(-.45,Math.min(.9,bird.rot)));
-    // Tail and stepped silhouette
-    pixelRect(-25,-4,8,8,'#f7d64a','#8e6126',1);
-    pixelRect(-22,-12,27,24,'#f7d64a','#8e6126',2);
-    pixelRect(-15,-16,17,4,'#f7d64a','#8e6126',1);
-    pixelRect(-15,12,17,4,'#f7d64a','#8e6126',1);
-    // Flapping orange wing
-    pixelRect(-15,1,14,9,'#e9a52b','#8e6126',1);
-    pixelRect(-12,3,8,4,'#ffd65b');
-    // White eye, dark pupil, and short orange beak
-    pixelRect(1,-10,10,10,'#fff','#8e6126',1);
-    pixelRect(7,-7,4,5,'#111');
-    pixelRect(7,-1,19,8,'#f28b2d','#8e4b1b',1);
-    pixelRect(11,1,12,2,'#ffd05b');
-    ctx.restore();
-    // Score with white outline like the classic arcade style
-    ctx.textAlign='center'; ctx.font='bold 48px Courier New'; ctx.lineWidth=6; ctx.strokeStyle='#426f76';
-    ctx.strokeText(String(flappyScore),W/2,75); ctx.fillStyle='#fff'; ctx.fillText(String(flappyScore),W/2,75);
-    if (!flappyRunning && !flappyOver) {
-      ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(0,0,W,H);
-      ctx.textAlign='center';ctx.font='bold 42px Courier New';ctx.fillStyle='#fff';ctx.strokeStyle='#4b7377';ctx.lineWidth=5;
-      ctx.strokeText('SPECIAL FLAPPY BIRD',W/2,220);ctx.fillText('SPECIAL FLAPPY BIRD',W/2,220);
-      ctx.font='bold 24px Courier New';ctx.strokeText('CLICK OR PRESS SPACE',W/2,280);ctx.fillText('CLICK OR PRESS SPACE',W/2,280);
-    }
-    if (flappyOver) {
-      ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(0,0,W,H);
-      ctx.textAlign='center';ctx.font='bold 52px Courier New';ctx.lineWidth=7;ctx.strokeStyle='#5e3322';ctx.fillStyle='#fff';
-      ctx.strokeText('GAME OVER',W/2,220);ctx.fillText('GAME OVER',W/2,220);
-      ctx.font='bold 26px Courier New';ctx.strokeText('SCORE: '+flappyScore,W/2,270);ctx.fillText('SCORE: '+flappyScore,W/2,270);
-      ctx.font='bold 20px Courier New';ctx.strokeText('CLICK TO PLAY AGAIN',W/2,325);ctx.fillText('CLICK TO PLAY AGAIN',W/2,325);
+
+const W = canvas.width, H = canvas.height;
+const groundY = H - 82;
+const t = performance.now() / 1000;
+
+// Smooth daytime sky
+const sky = ctx.createLinearGradient(0, 0, 0, H);
+sky.addColorStop(0, "#64d5ff");
+sky.addColorStop(0.65, "#b8f0ff");
+sky.addColorStop(1, "#e5fbff");
+ctx.fillStyle = sky;
+ctx.fillRect(0, 0, W, H);
+
+// Sun
+ctx.fillStyle = "rgba(255,245,155,.3)";
+ctx.beginPath();
+ctx.arc(W - 65, 100, 43, 0, Math.PI * 2);
+ctx.fill();
+ctx.fillStyle = "#fff5a8";
+ctx.beginPath();
+ctx.arc(W - 65, 100, 28, 0, Math.PI * 2);
+ctx.fill();
+
+// Smooth clouds
+function cloud(x, y, s) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.fillStyle = "#f5fdff";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 29, 11, 0, 0, Math.PI * 2);
+  ctx.ellipse(-13, -7, 14, 13, 0, 0, Math.PI * 2);
+  ctx.ellipse(3, -13, 17, 17, 0, 0, Math.PI * 2);
+  ctx.ellipse(19, -5, 15, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+cloud(((35 + t * 8) % (W + 90)) - 45, 165, .8);
+cloud(((205 + t * 5) % (W + 100)) - 50, 235, .62);
+cloud(((320 + t * 7) % (W + 100)) - 50, 145, .7);
+
+// Layered mountains
+function mountain(points, color) {
+  ctx.beginPath();
+  ctx.moveTo(points[0][0], points[0][1]);
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i][0], points[i][1]);
+  }
+  ctx.lineTo(W, groundY);
+  ctx.lineTo(0, groundY);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+mountain([[0,385],[45,310],[82,350],[137,255],[188,340],[240,275],[300,340],[W,285]], "#9ac9e9");
+mountain([[0,425],[55,355],[100,385],[160,310],[205,365],[275,295],[W,370]], "#6fa9dc");
+
+// Large mountain
+ctx.beginPath();
+ctx.moveTo(115, 435);
+ctx.lineTo(241, 195);
+ctx.lineTo(354, 435);
+ctx.closePath();
+const mountainShade = ctx.createLinearGradient(130, 240, 330, 420);
+mountainShade.addColorStop(0, "#83bce8");
+mountainShade.addColorStop(1, "#387bbd");
+ctx.fillStyle = mountainShade;
+ctx.fill();
+
+// Snowy peak
+ctx.beginPath();
+ctx.moveTo(205, 264);
+ctx.lineTo(241, 195);
+ctx.lineTo(280, 277);
+ctx.lineTo(258, 265);
+ctx.lineTo(246, 281);
+ctx.lineTo(234, 258);
+ctx.closePath();
+ctx.fillStyle = "#f4fcff";
+ctx.fill();
+
+// Waterfall
+ctx.beginPath();
+ctx.moveTo(235, 257);
+ctx.quadraticCurveTo(241, 300, 236, 332);
+ctx.quadraticCurveTo(232, 365, 245, 407);
+ctx.lineTo(265, 407);
+ctx.quadraticCurveTo(255, 363, 260, 331);
+ctx.quadraticCurveTo(264, 290, 250, 257);
+ctx.closePath();
+const water = ctx.createLinearGradient(235, 0, 265, 0);
+water.addColorStop(0, "#8ceaff");
+water.addColorStop(.5, "#f1ffff");
+water.addColorStop(1, "#48bfe9");
+ctx.fillStyle = water;
+ctx.fill();
+
+ctx.fillStyle = "rgba(235,255,255,.65)";
+ctx.beginPath();
+ctx.ellipse(253, 412, 28, 6, 0, 0, Math.PI * 2);
+ctx.fill();
+
+// Distant city
+const buildings = [
+  [0,470,23,100],[25,445,20,125],[47,483,25,87],
+  [75,455,28,115],[106,490,20,80],[128,462,25,108],
+  [156,480,23,90],[181,445,24,125],[207,480,21,90],
+  [230,455,28,115],[261,478,21,92],[284,440,28,130],
+  [314,465,22,105],[338,480,22,90]
+];
+buildings.forEach(([x,y,w,h], i) => {
+  ctx.fillStyle = i % 2 ? "#478bc0" : "#3478b3";
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "#a9e6ff";
+  for (let wy = y + 10; wy < y + h - 5; wy += 14) {
+    for (let wx = x + 5; wx < x + w - 3; wx += 9) {
+      ctx.fillRect(wx, wy, 4, 5);
     }
   }
-  function endFlappy() { flappyOver=true;flappyRunning=false;flappyBest=Math.max(flappyBest,flappyScore);drawFlappy(); }
-  function tickFlappy() {
+});
+
+// Distant animated birds
+for (let i = 0; i < 4; i++) {
+  const bx = (i * 103 + t * (9 + i * 2)) % (W + 30) - 15;
+  const by = 265 + i * 19 + Math.sin(t * 3 + i) * 3;
+  ctx.strokeStyle = "#477fa8";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(bx - 5, by);
+  ctx.quadraticCurveTo(bx - 2, by - 5, bx, by);
+  ctx.quadraticCurveTo(bx + 3, by - 5, bx + 6, by);
+  ctx.stroke();
+}
+
+// Trees
+for (let x = -8; x < W + 12; x += 22) {
+  const sway = Math.sin(t * 1.5 + x) * 2;
+  ctx.fillStyle = "#287e4c";
+  ctx.fillRect(x + 8, 564, 5, 24);
+  ctx.fillStyle = "#238d50";
+  ctx.beginPath();
+  ctx.arc(x + 10 + sway, 559, 13, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#46bd69";
+  ctx.beginPath();
+  ctx.arc(x + 5 + sway, 553, 8, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// River
+ctx.fillStyle = "#36bde2";
+ctx.fillRect(0, 584, W, Math.max(0, groundY - 584));
+ctx.fillStyle = "rgba(226,253,255,.65)";
+for (let x = -40; x < W; x += 63) {
+  const wx = (x + t * 18) % (W + 70);
+  ctx.fillRect(wx, 597 + (x % 3) * 4, 22, 2);
+}
+
+// Smooth green pipes
+pipes.forEach(p => {
+  const topH = p.gapY - pipeGap / 2;
+  const bottomY = p.gapY + pipeGap / 2;
+
+  function pipeBody(x, y, w, h, capAtBottom) {
+    if (h <= 0) return;
+    ctx.fillStyle = "#286b1d";
+    ctx.fillRect(x - 2, y, w + 4, h);
+
+    const g = ctx.createLinearGradient(x, 0, x + w, 0);
+    g.addColorStop(0, "#55a923");
+    g.addColorStop(.25, "#8ee13b");
+    g.addColorStop(.65, "#73bf2e");
+    g.addColorStop(1, "#3d8d22");
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+
+    ctx.fillStyle = "rgba(220,255,163,.75)";
+    ctx.fillRect(x + 8, y, 7, h);
+
+    const capY = capAtBottom ? y + h - 25 : y;
+    ctx.fillStyle = "#286b1d";
+    ctx.fillRect(x - 7, capY, w + 14, 25);
+    ctx.fillStyle = "#73bf2e";
+    ctx.fillRect(x - 5, capY + 2, w + 10, 21);
+    ctx.fillStyle = "#a2ed55";
+    ctx.fillRect(x + 3, capY + 3, 6, 18);
+  }
+
+  pipeBody(p.x, 0, pipeW, topH, true);
+  pipeBody(p.x, bottomY, pipeW, H - bottomY - 62, false);
+});
+
+// Ground
+ctx.fillStyle = "#80d43e";
+ctx.fillRect(0, groundY, W, 8);
+ctx.fillStyle = "#d8c879";
+ctx.fillRect(0, groundY + 8, W, H - groundY - 8);
+ctx.fillStyle = "#b69b4f";
+for (let x = -20; x < W; x += 36) {
+  ctx.fillRect(x, groundY + 22, 17, 4);
+  ctx.fillRect(x + 17, groundY + 38, 17, 4);
+}
+
+// Rounded yellow bird
+ctx.save();
+ctx.translate(bird.x, bird.y);
+ctx.rotate(Math.max(-.45, Math.min(.9, bird.rot)));
+
+ctx.fillStyle = "#f5a52b";
+ctx.beginPath();
+ctx.moveTo(-18, 0);
+ctx.lineTo(-29, -6);
+ctx.lineTo(-26, 5);
+ctx.closePath();
+ctx.fill();
+
+ctx.fillStyle = "#e9a72b";
+ctx.beginPath();
+ctx.ellipse(0, 0, 23, 18, 0, 0, Math.PI * 2);
+ctx.fill();
+
+ctx.fillStyle = "#ffdb50";
+ctx.beginPath();
+ctx.ellipse(-2, -4, 19, 13, -.12, 0, Math.PI * 2);
+ctx.fill();
+
+// Animated wing
+ctx.save();
+ctx.translate(-7, 5);
+ctx.rotate(Math.sin(t * 16) * .23);
+ctx.fillStyle = "#e99a24";
+ctx.beginPath();
+ctx.ellipse(0, 0, 12, 7, -.2, 0, Math.PI * 2);
+ctx.fill();
+ctx.strokeStyle = "#bd7720";
+ctx.lineWidth = 1.5;
+ctx.stroke();
+ctx.restore();
+
+// Eye
+ctx.fillStyle = "#fff";
+ctx.beginPath();
+ctx.ellipse(10, -8, 7, 9, 0, 0, Math.PI * 2);
+ctx.fill();
+ctx.strokeStyle = "#825020";
+ctx.lineWidth = 1.5;
+ctx.stroke();
+
+ctx.fillStyle = "#222";
+ctx.beginPath();
+ctx.arc(12, -7, 3, 0, Math.PI * 2);
+ctx.fill();
+
+// Beak
+ctx.fillStyle = "#f58225";
+ctx.beginPath();
+ctx.moveTo(17, -1);
+ctx.lineTo(31, 3);
+ctx.lineTo(17, 7);
+ctx.closePath();
+ctx.fill();
+ctx.strokeStyle = "#a9531c";
+ctx.lineWidth = 1.5;
+ctx.stroke();
+ctx.restore();
+
+// Score
+ctx.textAlign = "center";
+ctx.font = "bold 46px Arial";
+ctx.lineWidth = 5;
+ctx.strokeStyle = "#39717d";
+ctx.strokeText(String(flappyScore), W / 2, 73);
+ctx.fillStyle = "#fff";
+ctx.fillText(String(flappyScore), W / 2, 73);
+
+if (!flappyRunning && !flappyOver) {
+  ctx.fillStyle = "rgba(0,0,0,.3)";
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = "center";
+  ctx.font = "bold 27px Arial";
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#39717d";
+  ctx.fillStyle = "#fff";
+  ctx.strokeText("SPECIAL FLAPPY BIRD", W / 2, 220);
+  ctx.fillText("SPECIAL FLAPPY BIRD", W / 2, 220);
+  ctx.font = "bold 18px Arial";
+  ctx.strokeText("CLICK OR PRESS SPACE", W / 2, 280);
+  ctx.fillText("CLICK OR PRESS SPACE", W / 2, 280);
+}
+
+if (flappyOver) {
+  ctx.fillStyle = "rgba(0,0,0,.45)";
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = "center";
+  ctx.font = "bold 42px Arial";
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = "#5e3322";
+  ctx.fillStyle = "#fff";
+  ctx.strokeText("GAME OVER", W / 2, 220);
+  ctx.fillText("GAME OVER", W / 2, 220);
+  ctx.font = "bold 23px Arial";
+  ctx.strokeText("SCORE: " + flappyScore, W / 2, 270);
+  ctx.fillText("SCORE: " + flappyScore, W / 2, 270);
+  ctx.font = "bold 17px Arial";
+   ctx.fillText("CLICK TO PLAY AGAIN", W / 2, 325);
+}
+
+} // closes drawFlappy()
+
+function endFlappy() {
+  flappyOver = true;
+  flappyRunning = false;
+  flappyBest = Math.max(flappyBest, flappyScore);
+  drawFlappy();
+}
+
+function tickFlappy() {
     if (!flappyView.classList.contains('active')) { flappyFrame=0; return; }
     if (flappyRunning && !flappyOver) {
-      const groundY=canvas.height-62;
+      const groundY=canvas.height-82;
       bird.vy+=gravity; bird.y+=bird.vy; bird.rot=Math.min(.9,Math.max(-.5,bird.vy*.07));
       if (!pipes.length || pipes[pipes.length-1].x < canvas.width-205) pipes.push({x:canvas.width+12,gapY:175+Math.random()*245,scored:false});
       pipes.forEach(p=>{

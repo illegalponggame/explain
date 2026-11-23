@@ -432,6 +432,34 @@ body:has(#specialFlappyView.active) #secretOpenBtn{display:none!important}
 
 /* Special Flappy Bird has been removed from this game collection. */
 #specialFlappyView{display:none!important}
+
+  /* Christmas trim: a visibly draped string of pixel ornaments at the page top. */
+  body { position:relative; padding-top:92px; padding-bottom:0; }
+  body::before {
+    content:""; position:absolute; z-index:12000; pointer-events:none; top:0; left:0; width:100%; height:86px;
+    background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22600%22%20height%3D%22110%22%20viewBox%3D%220%200%20600%20110%22%20shape-rendering%3D%22crispEdges%22%3E%3Cpath%20d%3D%22M0%207%20Q37%2062%2075%207%20Q112%2062%20150%207%20Q187%2062%20225%207%20Q262%2062%20300%207%20Q337%2062%20375%207%20Q412%2062%20450%207%20Q487%2062%20525%207%20Q562%2062%20600%207%22%20fill%3D%22none%22%20stroke%3D%22%23171717%22%20stroke-width%3D%225%22%2F%3E%3Cg%20stroke%3D%22%23111%22%20stroke-width%3D%223%22%3E%3Cpath%20d%3D%22M75%207v25%20M225%207v25%20M375%207v25%20M525%207v25%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22%23171717%22%20stroke-width%3D%223%22%3E%3Cpath%20d%3D%22M65%2031h20v9H65z%20M215%2031h20v9h-20z%20M365%2031h20v9h-20z%20M515%2031h20v9h-20z%22%20fill%3D%22%23d6a52d%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22%23111%22%20stroke-width%3D%223%22%3E%3Cpath%20d%3D%22M61%2040h28v25l-6%2012H67l-6-12z%22%20fill%3D%22%23e83d35%22%2F%3E%3Cpath%20d%3D%22M211%2040h28v25l-6%2012h-16l-6-12z%22%20fill%3D%22%2339bd69%22%2F%3E%3Cpath%20d%3D%22M361%2040h28v25l-6%2012h-16l-6-12z%22%20fill%3D%22%23398be8%22%2F%3E%3Cpath%20d%3D%22M511%2040h28v25l-6%2012h-16l-6-12z%22%20fill%3D%22%23f3d13e%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22%23fff%22%3E%3Crect%20x%3D%2267%22%20y%3D%2247%22%20width%3D%227%22%20height%3D%227%22%2F%3E%3Crect%20x%3D%22217%22%20y%3D%2247%22%20width%3D%227%22%20height%3D%227%22%2F%3E%3Crect%20x%3D%22367%22%20y%3D%2247%22%20width%3D%227%22%20height%3D%227%22%2F%3E%3Crect%20x%3D%22517%22%20y%3D%2247%22%20width%3D%227%22%20height%3D%227%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"); background-repeat:repeat-x; background-size:600px 110px; background-position:center top;
+    filter:drop-shadow(0 2px 4px rgba(255,220,90,.32));
+  }
+  /* Deep, rolling snowdrifts attached to the bottom of the document. This is
+     deliberately not fixed to the viewport: it scrolls with the page. */
+  /* Snow is a normal-flow footer decoration, so it never covers game instructions. */
+  body::after {
+    content:"";
+    display:block;
+    position:relative;
+    left:auto; bottom:auto;
+    z-index:0;
+    pointer-events:none;
+    width:100%;
+    height:150px;
+    margin-top:24px;
+    background-repeat:repeat-x;
+    background-position:center bottom;
+    background-size:1200px 150px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='150' viewBox='0 0 1200 150' shape-rendering='crispEdges'%3E%3Cpath d='M0 36H48V30H96V23H156V28H216V38H276V32H336V21H396V17H456V25H516V34H576V39H636V31H696V20H756V16H816V24H876V34H936V39H996V31H1056V22H1116V18H1164V25H1200V150H0Z' fill='%23f7f8fa'/%3E%3Cpath d='M0 63H60V55H120V47H180V53H240V64H300V57H360V45H420V39H480V47H540V59H600V65H660V57H720V45H780V40H840V48H900V60H960V66H1020V58H1080V47H1140V43H1200V150H0Z' fill='%23e5e8ed'/%3E%3Cpath d='M0 82H72V75H144V67H216V73H288V84H360V77H432V65H504V59H576V67H648V79H720V85H792V77H864V65H936V60H1008V68H1080V80H1152V86H1200V150H0Z' fill='%23ffffff'/%3E%3Cpath d='M0 105H96V98H192V90H288V97H384V107H480V100H576V88H672V82H768V90H864V102H960V108H1056V100H1152V92H1200V150H0Z' fill='%23eceff3'/%3E%3Cpath d='M0 132H120V125H240V117H360V124H480V135H600V127H720V115H840V109H960V117H1080V130H1200V150H0Z' fill='%23ffffff'/%3E%3Cpath d='M0 143H1200V150H0Z' fill='%23dfe3e9'/%3E%3C/svg%3E");
+  }
+  .limited-time-tag { display:inline-block; margin-left:8px; padding:3px 6px; border:1px solid #e0b83f; border-radius:4px; color:#ffd75e; background:linear-gradient(135deg,#59420b,#302307); font-size:10px; font-weight:1000; letter-spacing:.5px; white-space:nowrap; text-shadow:0 0 5px rgba(255,211,83,.35); opacity:1; filter:none; }
+
 </style>
 </head>
 <body>
@@ -487,7 +515,7 @@ body:has(#specialFlappyView.active) #secretOpenBtn{display:none!important}
   <canvas id="impossibleGlitchCanvas" aria-hidden="true"></canvas>
   <div id="achievementToast" class="achievement-toast" role="status" aria-live="polite"><strong>🏆 ACHIEVEMENT UNLOCKED!</strong><span>Congrats, you did it!</span></div>
   <header>
-    <div class="eyebrow">Retro • Neon • Arcade</div>
+    <div class="eyebrow">🎄 CHRISTMAS ARCADE • RETRO • FESTIVE LIGHTS 🎄</div>
     <h1>ILLEGAL <span>PONG</span></h1>
     <p class="subtitle">Two paddles. One ball. Open ⚙ Settings whenever you want to change music.</p>
   </header>
@@ -529,15 +557,15 @@ body:has(#specialFlappyView.active) #secretOpenBtn{display:none!important}
       <div id="musicStatus" aria-live="polite">Music One is selected. Press Play Music to start Lift Jam.</div>
       <hr style="border:0;border-top:1px solid #555;margin:16px 0">
       <h3 style="margin:0 0 8px">🎩 Paddle Accessories</h3>
-      <p>Buy each accessory for 35 coins, then equip it on the left or right paddle directly from this list. Press unequip to remove it.</p>
+      <p>Buy regular accessories for 35 coins, or get the limited-time Reindeer Ears for 50 coins. Equip accessories on either paddle!</p>
       <div id="accessoryShopList" style="display:grid;gap:7px;margin:10px 0 16px"></div>
       <select id="leftAccessory" aria-label="Left paddle accessory" style="display:none">
-        <option value="none">None</option><option value="pumpkin">Halloween Pumpkin Hat</option><option value="cheese">Cheese Hat</option><option value="redNikes">Red Nikes</option><option value="laggy">Laggy Paddle</option><option value="smiley">Black Smiley Face</option><option value="yellowNikes">Yellow Nikes</option>
+        <option value="none">None</option><option value="pumpkin">Halloween Pumpkin Hat</option><option value="cheese">Cheese Hat</option><option value="redNikes">Red Nikes</option><option value="laggy">Laggy Paddle</option><option value="smiley">Black Smiley Face</option><option value="yellowNikes">Yellow Nikes</option><option value="reindeer">Reindeer Ears — LIMITED TIME</option>
       </select>
       <select id="rightAccessory" aria-label="Right paddle accessory" style="display:none">
-        <option value="none">None</option><option value="pumpkin">Halloween Pumpkin Hat</option><option value="cheese">Cheese Hat</option><option value="redNikes">Red Nikes</option><option value="laggy">Laggy Paddle</option><option value="smiley">Black Smiley Face</option><option value="yellowNikes">Yellow Nikes</option>
+        <option value="none">None</option><option value="pumpkin">Halloween Pumpkin Hat</option><option value="cheese">Cheese Hat</option><option value="redNikes">Red Nikes</option><option value="laggy">Laggy Paddle</option><option value="smiley">Black Smiley Face</option><option value="yellowNikes">Yellow Nikes</option><option value="reindeer">Reindeer Ears — LIMITED TIME</option>
       </select>
-      <p id="accessoryShopStatus" role="status" aria-live="polite" style="color:#ddd;margin:8px 0 0">Each accessory costs 35 coins. Press the purchase button beside a locked accessory. Once bought, you can use it on either paddle.</p>
+      <p id="accessoryShopStatus" role="status" aria-live="polite" style="color:#ddd;margin:8px 0 0">Regular accessories cost 35 coins. Limited-time Reindeer Ears cost 50 coins. Press the purchase button beside a locked accessory, then equip it on either paddle.</p>
       <hr style="border:0;border-top:1px solid #555;margin:16px 0">
       <h3 style="margin:0 0 8px">👑 Owner Code</h3>
       <p>Enter the owner code to unlock infinite coins and free accessories on this browser.</p>
@@ -1725,13 +1753,15 @@ function tickFlappy() {
     if (event.key === 'Enter') unlockOwnerMode();
   });
   const ACCESSORY_COST = 35;
+  const ACCESSORY_COSTS = { reindeer: 50 }; // Limited-time Christmas accessory
   const ACCESSORIES = {
     pumpkin: 'Halloween Pumpkin Hat',
     cheese: 'Cheese Hat',
     redNikes: 'Red Nikes',
     laggy: 'Laggy Paddle',
     smiley: 'Black Smiley Face',
-    yellowNikes: 'Yellow Nikes'
+    yellowNikes: 'Yellow Nikes',
+    reindeer: 'Reindeer Ears'
   };
   const ACCESSORY_STORAGE_KEY = 'illegalPongAccessoriesOwnedV1';
   let ownedAccessories = {};
@@ -1758,14 +1788,21 @@ function tickFlappy() {
       const row = document.createElement('div');
       row.style.cssText = `display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:8px 9px;border:1px solid ${owned ? '#666' : '#444'};border-radius:7px;background:${owned ? '#181818' : '#303030'};color:${owned ? '#eee' : '#999'};`;
       const label = document.createElement('div');
-      label.style.cssText = `flex:1;min-width:130px;font-size:13px;${owned ? '' : 'filter:grayscale(1);opacity:.78;'}`;
+      label.style.cssText = `flex:1;min-width:130px;font-size:13px;color:${owned ? '#eee' : '#c9c9c9'};`;
       label.textContent = (owned ? '✓ ' : '🔒 ') + name;
+      if (key === 'reindeer') {
+        const limited = document.createElement('span');
+        limited.className = 'limited-time-tag';
+        limited.textContent = 'LIMITED TIME';
+        label.appendChild(limited);
+      }
       row.appendChild(label);
       if (!owned) {
         const buy = document.createElement('button');
         buy.type = 'button';
         buy.style.cssText = 'font-size:11px;padding:5px 8px;white-space:nowrap;';
-        buy.textContent = ownerMode ? 'UNLOCK FREE 👑' : `BUY · ${ACCESSORY_COST} 🪙`;
+        const itemCost = ACCESSORY_COSTS[key] ?? ACCESSORY_COST;
+        buy.textContent = ownerMode ? 'UNLOCK FREE 👑' : `BUY · ${itemCost} 🪙`;
         buy.addEventListener('click', () => purchaseAccessory(key));
         row.appendChild(buy);
       } else {
@@ -1805,11 +1842,12 @@ function tickFlappy() {
   }
   function purchaseAccessory(key) {
     if (!ACCESSORIES[key] || ownedAccessories[key]) return;
-    if (!ownerMode && coins < ACCESSORY_COST) {
-      if (accessoryShopStatus) accessoryShopStatus.textContent = `Not enough coins! ${ACCESSORIES[key]} costs ${ACCESSORY_COST} coins; you have ${coins}.`;
+    const itemCost = ACCESSORY_COSTS[key] ?? ACCESSORY_COST;
+    if (!ownerMode && coins < itemCost) {
+      if (accessoryShopStatus) accessoryShopStatus.textContent = `Not enough coins! ${ACCESSORIES[key]} costs ${itemCost} coins; you have ${coins}.`;
       return;
     }
-    if (!ownerMode) coins -= ACCESSORY_COST;
+    if (!ownerMode) coins -= itemCost;
     ownedAccessories[key] = true;
     saveOwnedAccessories();
     try { localStorage.setItem(COIN_STORAGE_KEY, String(coins)); } catch (_) {}
@@ -2834,7 +2872,39 @@ function tickFlappy() {
 
     // Every accessory is made from hard-edged pixel blocks and physically touches
     // the paddle (hats sit on its top edge; shoes rest against its bottom edge).
-    if (choice === 'pumpkin') {
+    if (choice === 'reindeer') {
+      // Reindeer headband is deliberately drawn OVER the paddle's top edge,
+      // so the accessory visibly clips onto the paddle instead of hovering.
+      const top = y - 27;
+      const left = Math.round(cx - 17);
+      // Antlers: chunky pixel branches with warm highlights.
+      ctx.fillStyle = '#70401f';
+      ctx.fillRect(left - 2, top + 13, 7, 12);
+      ctx.fillRect(left - 7, top + 7, 6, 10);
+      ctx.fillRect(left - 10, top + 2, 6, 8);
+      ctx.fillRect(left + 25, top + 13, 7, 12);
+      ctx.fillRect(left + 30, top + 7, 6, 10);
+      ctx.fillRect(left + 33, top + 2, 6, 8);
+      ctx.fillStyle = '#b8753e';
+      ctx.fillRect(left - 5, top + 10, 3, 6);
+      ctx.fillRect(left + 29, top + 10, 3, 6);
+      // Soft inner ear pixels.
+      ctx.fillStyle = '#e6a16b';
+      ctx.fillRect(left + 1, top + 17, 3, 5);
+      ctx.fillRect(left + 27, top + 17, 3, 5);
+      // Red brow band, broad enough to read clearly at normal game scale.
+      ctx.fillStyle = '#711923';
+      ctx.fillRect(left + 3, y - 7, 28, 9);
+      ctx.fillStyle = '#b92b35';
+      ctx.fillRect(left + 5, y - 6, 24, 4);
+      // Gold centre clasp and a small tab that overlaps the paddle itself.
+      ctx.fillStyle = '#f1c65a';
+      ctx.fillRect(left + 14, y - 6, 6, 5);
+      ctx.fillStyle = '#711923';
+      ctx.fillRect(left + 13, y, 8, 5);
+      ctx.fillStyle = '#f1c65a';
+      ctx.fillRect(left + 15, y + 1, 4, 2);
+    } else if (choice === 'pumpkin') {
       const py = y - 23; // pumpkin base touches the paddle's top edge
       const px = Math.round(cx - 13);
       // blocky green stem

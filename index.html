@@ -384,6 +384,7 @@
   .touch-row { display:flex; gap:8px; }
   .touch-btn { flex:1; min-height:54px; font:900 1rem 'Courier New',monospace; color:#fff; background:#222; border:2px solid #777; border-radius:8px; touch-action:none; user-select:none; -webkit-user-select:none; }
   .touch-btn:active, .touch-btn.pressed { background:#555; transform:scale(.98); }
+  .owner-smg-btn { margin-top:6px; background:#8b6415; border-color:#f2c94c; color:#fff4c2; }
   .touch-fire { margin-top:8px; width:100%; min-height:46px; border-color:#aaa; }
   .game-wrap, canvas { touch-action:pan-y; }
   @media (pointer:coarse), (max-width:760px) {
@@ -648,17 +649,17 @@ body:has(#specialFlappyView.active) #secretOpenBtn{display:none!important}
       <div class="touch-player" id="touchLeftPlayer">
         <h3>PLAYER 1 · LEFT</h3>
         <div class="touch-row"><button class="touch-btn" type="button" data-hold-key="w" aria-label="Player 1 move up">▲ UP</button><button class="touch-btn" type="button" data-hold-key="s" aria-label="Player 1 move down">▼ DOWN</button></div>
-        <button class="touch-btn touch-fire" type="button" data-fire="left">FIRE SHOTGUN</button>
+        <button class="touch-btn touch-fire" type="button" data-fire="left">HOLD TO FIRE</button><button class="touch-btn owner-smg-btn" id="ownerGiveSMGLeft" type="button" hidden>👑 GIVE ME SMG</button>
       </div>
       <div class="touch-player" id="touchRightPlayer">
         <h3>PLAYER 2 · RIGHT</h3>
         <div class="touch-row"><button class="touch-btn" type="button" data-hold-key="ArrowUp" aria-label="Player 2 move up">▲ UP</button><button class="touch-btn" type="button" data-hold-key="ArrowDown" aria-label="Player 2 move down">▼ DOWN</button></div>
-        <button class="touch-btn touch-fire" type="button" data-fire="right">FIRE SHOTGUN</button>
+        <button class="touch-btn touch-fire" type="button" data-fire="right">HOLD TO FIRE</button><button class="touch-btn owner-smg-btn" id="ownerGiveSMGRight" type="button" hidden>👑 GIVE ME SMG</button>
       </div>
     </div>
 
     <p id="status" class="status" aria-live="polite">Press Start Game when you're ready.</p>
-    <p class="powerup-note">🎁 Power-ups are random: BIG PADDLE or SHOTGUN (50/50). Final Boss: shotguns only.</p>
+    <p class="powerup-note">🎁 Normal mode: 30% SMG chance. Final Boss: players cannot collect SMGs; only the boss uses its timed SMG burst after 13 seconds and shotgun every 15 seconds.</p>
 
     <div class="help-grid">
       <div class="help">
@@ -1498,6 +1499,8 @@ function tickFlappy() {
     if (Number.isFinite(st.rightPowerTimer)) rightPowerTimer = st.rightPowerTimer;
     if (Number.isFinite(st.leftShotgun)) leftShotgun = st.leftShotgun;
     if (Number.isFinite(st.rightShotgun)) rightShotgun = st.rightShotgun;
+    if (Number.isFinite(st.leftSMG)) leftSMG = st.leftSMG;
+    if (Number.isFinite(st.rightSMG)) rightSMG = st.rightSMG;
     if (Number.isFinite(st.leftStunTimer)) leftStunTimer = st.leftStunTimer;
     if (Number.isFinite(st.rightStunTimer)) rightStunTimer = st.rightStunTimer;
     running = !!st.running; paused = false; gameOver = !!st.gameOver; // Online matches can never be paused.
@@ -1703,6 +1706,7 @@ function tickFlappy() {
     if (ownerModeExitBtn) ownerModeExitBtn.hidden = !ownerMode;
     if (ownerCodeBtn) ownerCodeBtn.textContent = ownerMode ? 'Owner Mode Active' : 'Unlock';
     if (ownerCodeBtn) ownerCodeBtn.disabled = ownerMode;
+    refreshOwnerSMGButtons();
     if (ownerCodeInput) ownerCodeInput.disabled = ownerMode;
     // Achievement celebration previews are visible only while Owner Mode is unlocked.
     document.querySelectorAll('.owner-only-preview').forEach(button => { button.hidden = !ownerMode; });
@@ -1887,12 +1891,15 @@ function tickFlappy() {
   let deathmatchGlassShards = [];
   let rallyHits = 0;
 
-  // Power-ups are normally random; Final Boss mode spawns only two shotgun pickups every 15 seconds, with a two-shotgun ammo cap.
+  // Power-ups are normally random; Final Boss mode spawns two power-ups every 15 seconds; the boss uses an SMG burst after 13 seconds and a shotgun every 15 seconds.
   let powerUps = [];
   let leftPowerTimer = 0;
   let rightPowerTimer = 0;
   let leftShotgun = 0;
   let rightShotgun = 0;
+  let leftSMG = 0, rightSMG = 0;
+  let leftSMGClock = 0, rightSMGClock = 0;
+  const smgHeld = { left: false, right: false };
   let leftStunTimer = 0;
   let rightStunTimer = 0;
   let bullets = [];
@@ -1900,7 +1907,8 @@ function tickFlappy() {
   let nextPowerUpSpawn = 25 * 60;
   // In local two-player mode, alternate pickup sides so both players get fair chances.
   let nextLocalPowerUpSide = 'left';
-  let nextBossShot = 12 * 60;
+  let nextBossShot = 13 * 60; // Final Boss begins its SMG burst after 13 seconds.
+  let nextBossShotgun = 15 * 60; // Final Boss fires a shotgun every 15 seconds.
   let nextBossLaser = (9 + Math.random() * 3) * 60;
   let bossLaserAttack = null;
   // Hard Bot meteor: shadow telegraph first, then a pixel-art meteor crashes.
@@ -1919,10 +1927,12 @@ function tickFlappy() {
     if (mode === 'two') nextLocalPowerUpSide = 'left';
     leftPowerTimer = rightPowerTimer = 0;
     leftShotgun = rightShotgun = 0;
+    leftSMG = rightSMG = 0; leftSMGClock = rightSMGClock = 0; smgHeld.left = smgHeld.right = false;
     leftStunTimer = rightStunTimer = 0;
     bullets = [];
     shotgunEffect = null;
-    nextBossShot = 12 * 60;
+    nextBossShot = 13 * 60;
+    nextBossShotgun = 15 * 60;
     nextBossLaser = (9 + Math.random() * 3) * 60;
     bossLaserAttack = null;
     hardMeteors = [];
@@ -2545,15 +2555,17 @@ function tickFlappy() {
         x: paddleX + paddle.w / 2,
         y,
         side,
-        type: impossibleMode ? 'shotgun' : (Math.random() < 0.5 ? 'grow' : 'shotgun'),
+        type: impossibleMode
+          ? 'shotgun'
+          : (Math.random() < 0.30 ? 'smg' : (Math.random() < 0.5 ? 'grow' : 'shotgun')),
         size: 20,
         life: 900
       });
     }
 
     ui.status.textContent = impossibleMode
-      ? 'FINAL BOSS MODE: 2 SHOTGUNS SPAWNED (MAX AMMO: 2)!'
-      : `A random ${powerUps[powerUps.length - 1].type === 'grow' ? 'big-paddle' : 'shotgun'} power-up appeared!`;
+      ? 'FINAL BOSS MODE: 2 SHOTGUNS SPAWNED (MAX AMMO: 2)! The boss keeps its own SMG attack.'
+      : `A random ${powerUps[powerUps.length - 1].type === 'smg' ? 'SMG' : powerUps[powerUps.length - 1].type === 'grow' ? 'big-paddle' : 'shotgun'} power-up appeared!`;
   }
 
   function collectPowerUp(index, side) {
@@ -2564,6 +2576,9 @@ function tickFlappy() {
     if (type === 'grow') {
       if (side === 'left') leftPowerTimer = POWER_DURATION;
       else rightPowerTimer = POWER_DURATION;
+    } else if (type === 'smg') {
+      if (side === 'left') leftSMG = Math.min(120, leftSMG + 12);
+      else rightSMG = Math.min(120, rightSMG + 12);
     } else {
       if (side === 'left') leftShotgun = Math.min(2, leftShotgun + 1);
       else rightShotgun = Math.min(2, rightShotgun + 1);
@@ -2577,7 +2592,7 @@ function tickFlappy() {
 
     ui.status.textContent = type === 'grow'
       ? `${playerName} got the BIG PADDLE upgrade!`
-      : `${playerName} collected a SHOTGUN! Ammo: ${side === 'left' ? leftShotgun : rightShotgun}. Press ${side === 'left' ? 'D' : '←'} to fire.`;
+      : type === 'smg' ? `${playerName} collected an SMG! 12 rounds added — hold fire to spray!` : `${playerName} collected a SHOTGUN! Ammo: ${side === 'left' ? leftShotgun : rightShotgun}. Press ${side === 'left' ? 'D' : '←'} to fire.`;
   }
 
   function checkPowerUpCollection() {
@@ -2640,6 +2655,17 @@ function tickFlappy() {
 
     ui.status.textContent =
       `${side === 'left' ? 'Player 1' : (mode === 'cpu' ? 'Computer' : 'Player 2')} fired the shotgun!`;
+  }
+
+  function fireSMG(side) {
+    const ammo = side === 'left' ? leftSMG : rightSMG;
+    if (!ammo || !running || paused || gameOver) return;
+    if (side === 'left') leftSMG--; else rightSMG--;
+    const paddleY = side === 'left' ? leftY : rightY;
+    const paddleH = (side === 'left' ? leftPowerTimer : rightPowerTimer) > 0 ? 150 : 108;
+    const x = side === 'left' ? 34 + paddle.w + 5 : W - 34 - paddle.w - 5;
+    bullets.push({ x, y: paddleY + paddleH / 2, vx: side === 'left' ? 11.5 : -11.5, vy: (Math.random() - .5) * 1.2, owner: side, smg: true });
+    ui.status.textContent = `${side === 'left' ? 'Player 1' : (mode === 'cpu' ? 'Computer' : 'Player 2')} firing SMG · ${side === 'left' ? leftSMG : rightSMG} rounds left`;
   }
 
   function updateBullets(dt) {
@@ -2782,23 +2808,36 @@ function tickFlappy() {
     ball.vy = hit.vy;
 
     const impossibleMode = mode === 'cpu' && ui.difficulty.value === 'impossible';
+    if (smgHeld.left && leftSMG > 0) { leftSMGClock -= dt; if (leftSMGClock <= 0) { fireSMG('left'); leftSMGClock = 5; } }
+    if (smgHeld.right && rightSMG > 0) { rightSMGClock -= dt; if (rightSMGClock <= 0) { fireSMG('right'); rightSMGClock = 5; } }
     for (const pickup of powerUps) pickup.life -= dt;
     powerUps = powerUps.filter(pickup => pickup.life > 0);
 
     if (impossibleMode) {
-      // Final Boss gets only two shotgun pickups every 15 seconds; each player can hold at most two shotguns.
+      // Final Boss gets two power-ups every 15 seconds; its SMG attack is timed separately.
       nextPowerUpSpawn -= dt;
       if (nextPowerUpSpawn <= 0) {
         spawnPowerUp();
         nextPowerUpSpawn = 15 * 60;
       }
 
-      // Final Boss automatically fires exactly one shotgun every 12 seconds.
+      // Final Boss starts a 12-round SMG burst after 13 seconds, then repeats
+      // the burst every 13 seconds. The normal SMG firing clock spaces shots.
       nextBossShot -= dt;
       if (nextBossShot <= 0) {
-        rightShotgun = Math.min(2, rightShotgun + 1);
+        rightSMG = Math.max(rightSMG, 12);
+        rightSMGClock = 0;
+        smgHeld.right = true;
+        nextBossShot = 13 * 60;
+      }
+      if (rightSMG <= 0) smgHeld.right = false;
+
+      // Keep the shotgun on its own timer so it continues alongside the SMG.
+      nextBossShotgun -= dt;
+      if (nextBossShotgun <= 0) {
+        rightShotgun = Math.max(rightShotgun, 1);
         fireShotgun('right');
-        nextBossShot = 12 * 60;
+        nextBossShotgun = 15 * 60;
       }
 
       // Three-laser attack: telegraph the exact lanes as hollow red beams, then fire.
@@ -2831,7 +2870,8 @@ function tickFlappy() {
         if (bossLaserAttack.age >= 93) bossLaserAttack = null;
       }
     } else {
-      nextBossShot = 12 * 60;
+      nextBossShot = 13 * 60;
+      nextBossShotgun = 15 * 60;
       nextBossLaser = 8 * 60;
       bossLaserAttack = null;
       nextPowerUpSpawn -= dt;
@@ -3359,7 +3399,9 @@ function tickFlappy() {
 
       ctx.fillStyle = '#ffffff';
 
-      if (powerUp.type === 'grow') {
+      if (powerUp.type === 'smg') {
+        ctx.fillRect(cx - 2 * p, cy - p, 5 * p, p); ctx.fillRect(cx + p, cy - 2 * p, 2 * p, p); ctx.fillRect(cx - p, cy, 2 * p, 2 * p);
+      } else if (powerUp.type === 'grow') {
         // Up arrow for BIG PADDLE.
         ctx.fillRect(cx - p, cy - 3 * p, 2 * p, 2 * p);
         ctx.fillRect(cx - 2 * p, cy - 2 * p, p, p);
@@ -3408,6 +3450,19 @@ function tickFlappy() {
       ctx.restore();
     }
 
+    function drawSMG(x, y, flip = false) {
+      ctx.save(); ctx.translate(x, y); if (flip) ctx.scale(-1, 1);
+      // Compact pixel-art SMG, deliberately much smaller than the paddle.
+      ctx.fillStyle = '#252525'; ctx.fillRect(-10, -4, 23, 7);
+      ctx.fillStyle = '#777'; ctx.fillRect(-2, -6, 16, 3);
+      ctx.fillStyle = '#bdbdbd'; ctx.fillRect(9, -5, 8, 2);
+      ctx.fillStyle = '#171717'; ctx.fillRect(2, 3, 5, 7);
+      ctx.fillStyle = '#8b542f'; ctx.fillRect(-8, 3, 7, 4);
+      ctx.restore();
+    }
+    if (leftSMG > 0) drawSMG(52, leftY + (leftPowerTimer > 0 ? 75 : 54));
+    if (rightSMG > 0) drawSMG(W - 52, rightY + (rightPowerTimer > 0 ? 75 : 54), true);
+
     if (leftShotgun > 0) {
       drawShotgun(
         'left',
@@ -3455,13 +3510,11 @@ function tickFlappy() {
       }
     }
 
-    // Shotgun pellets.
-    ctx.fillStyle = '#f5f5f5';
-
+    // White shotgun pellets and bright yellow SMG rounds.
     for (const b of bullets) {
-      // Slightly larger pixel-art shotgun pellets.
-      ctx.fillRect(b.x - 4, b.y - 4, 8, 8);
-      ctx.fillRect(b.x - 2, b.y - 6, 4, 12);
+      ctx.fillStyle = b.smg ? '#ffd928' : '#f5f5f5';
+      if (b.smg) { ctx.fillRect(b.x - 5, b.y - 2, 9, 4); ctx.fillRect(b.x - 2, b.y - 3, 4, 6); }
+      else { ctx.fillRect(b.x - 4, b.y - 4, 8, 8); ctx.fillRect(b.x - 2, b.y - 6, 4, 12); }
     }
 
     // Glass-shatter transition before the DEATHMATCH announcement.
@@ -3606,7 +3659,7 @@ function tickFlappy() {
         broadcastOnline('state', {
           leftY, rightY, ball: { x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy },
           leftPoints, rightPoints, target: Number(ui.winScore.value), running, paused: false, gameOver,
-          sentAt: Date.now(), powerUps, bullets, leftPowerTimer, rightPowerTimer, leftShotgun, rightShotgun,
+          sentAt: Date.now(), powerUps, bullets, leftPowerTimer, rightPowerTimer, leftShotgun, rightShotgun, leftSMG, rightSMG,
           leftStunTimer, rightStunTimer,
           overlay: !ui.overlay.classList.contains('hidden') ? {
             title: ui.overlayTitle.textContent, text: ui.overlayText.textContent,
@@ -3652,12 +3705,10 @@ function tickFlappy() {
 
     keys.add(key);
 
-    if (!event.repeat && (key === 'd' || key === 'D')) {
-      fireShotgun('left');
-    }
+    if (key === 'd' || key === 'D') { smgHeld.left = true; if (!event.repeat) { if (leftShotgun > 0) fireShotgun('left'); else fireSMG('left'); } }
 
-    if (!event.repeat && key === 'ArrowLeft' && mode === 'two') {
-      fireShotgun('right');
+    if (key === 'ArrowLeft' && mode === 'two') {
+      smgHeld.right = true; if (!event.repeat) { if (rightShotgun > 0) fireShotgun('right'); else fireSMG('right'); }
     } else if (!event.repeat && key === 'ArrowLeft' && mode === 'online' && onlineRole === 'player_two') {
       broadcastOnline('input', { rightY: remoteRightY, action: 'shotgun' });
     }
@@ -3674,6 +3725,12 @@ function tickFlappy() {
   // movement held until the finger is lifted, even if it slides off the button.
   const touchLeft = document.getElementById('touchLeftPlayer');
   const touchRight = document.getElementById('touchRightPlayer');
+  const ownerGiveLeft = document.getElementById('ownerGiveSMGLeft');
+  const ownerGiveRight = document.getElementById('ownerGiveSMGRight');
+  function refreshOwnerSMGButtons() { const l = document.getElementById('ownerGiveSMGLeft'); const r = document.getElementById('ownerGiveSMGRight'); if (l) l.hidden = !ownerMode; if (r) r.hidden = !ownerMode; }
+  if (ownerGiveLeft) ownerGiveLeft.addEventListener('click', () => { leftSMG = 12; ui.status.textContent = 'OWNER MODE: SMG granted — 12 rounds!'; });
+  if (ownerGiveRight) ownerGiveRight.addEventListener('click', () => { rightSMG = 12; ui.status.textContent = 'OWNER MODE: SMG granted — 12 rounds!'; });
+  refreshOwnerSMGButtons();
   function refreshTouchControls() {
     touchLeft.style.display = (mode === 'online' && onlineRole === 'player_two') ? 'none' : '';
     touchRight.style.display = (mode === 'cpu' || (mode === 'online' && onlineRole === 'player_one')) ? 'none' : '';
@@ -3692,22 +3749,26 @@ function tickFlappy() {
     button.addEventListener('lostpointercapture', () => { keys.delete(key); button.classList.remove('pressed'); });
     button.addEventListener('contextmenu', event => event.preventDefault());
   });
-  document.querySelectorAll('[data-fire]').forEach(button => button.addEventListener('pointerdown', event => {
-    event.preventDefault();
+  document.querySelectorAll('[data-fire]').forEach(button => {
     const side = button.dataset.fire;
-    if (side === 'left' && mode === 'online' && onlineRole === 'player_two') return;
-    if (side === 'right' && mode === 'online' && onlineRole === 'player_one') return;
-    if (side === 'left' && mode === 'online' && onlineRole === 'player_one') fireShotgun('left');
-    else if (side === 'right' && mode === 'online' && onlineRole === 'player_two') broadcastOnline('input', { rightY: remoteRightY, action: 'shotgun' });
-    else fireShotgun(side);
-    button.classList.add('pressed');
-    setTimeout(() => button.classList.remove('pressed'), 130);
-  }));
+    button.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      if (side === 'left' && mode === 'online' && onlineRole === 'player_two') return;
+      if (side === 'right' && mode === 'online' && onlineRole === 'player_one') return;
+      if (side === 'left' && mode === 'online' && onlineRole === 'player_one') fireShotgun('left');
+      else if (side === 'right' && mode === 'online' && onlineRole === 'player_two') broadcastOnline('input', { rightY: remoteRightY, action: 'shotgun' });
+      else { smgHeld[side] = true; if (side === 'left' ? leftShotgun > 0 : rightShotgun > 0) fireShotgun(side); else fireSMG(side); }
+      button.classList.add('pressed');
+      try { button.setPointerCapture(event.pointerId); } catch (_) {}
+    });
+    const release = () => { smgHeld[side] = false; button.classList.remove('pressed'); };
+    button.addEventListener('pointerup', release); button.addEventListener('pointercancel', release); button.addEventListener('lostpointercapture', release);
+  });
   refreshTouchControls();
 
-  document.addEventListener('keyup', event => keys.delete(event.key));
+  document.addEventListener('keyup', event => { keys.delete(event.key); if (event.key === 'd' || event.key === 'D') smgHeld.left = false; if (event.key === 'ArrowLeft') smgHeld.right = false; });
 
-  window.addEventListener('blur', () => keys.clear());
+  window.addEventListener('blur', () => { keys.clear(); smgHeld.left = smgHeld.right = false; });
 
   ui.cpuMode.addEventListener('click', () => setMode('cpu'));
   ui.twoMode.addEventListener('click', () => setMode('two'));

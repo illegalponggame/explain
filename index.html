@@ -659,7 +659,7 @@ body:has(#specialFlappyView.active) #secretOpenBtn{display:none!important}
     </div>
 
     <p id="status" class="status" aria-live="polite">Press Start Game when you're ready.</p>
-    <p class="powerup-note">🎁 Normal mode: 30% SMG chance. Final Boss: players cannot collect SMGs; only the boss uses its timed SMG burst after 13 seconds and shotgun every 15 seconds.</p>
+    <p class="powerup-note">🎁 SMGs do not spawn as normal power-ups. Only the Final Boss uses its timed SMG burst; Owner Mode can grant an SMG with the special buttons.</p>
 
     <div class="help-grid">
       <div class="help">
@@ -2557,7 +2557,7 @@ function tickFlappy() {
         side,
         type: impossibleMode
           ? 'shotgun'
-          : (Math.random() < 0.30 ? 'smg' : (Math.random() < 0.5 ? 'grow' : 'shotgun')),
+          : (Math.random() < 0.5 ? 'grow' : 'shotgun'),
         size: 20,
         life: 900
       });
@@ -2577,8 +2577,9 @@ function tickFlappy() {
       if (side === 'left') leftPowerTimer = POWER_DURATION;
       else rightPowerTimer = POWER_DURATION;
     } else if (type === 'smg') {
-      if (side === 'left') leftSMG = Math.min(120, leftSMG + 12);
-      else rightSMG = Math.min(120, rightSMG + 12);
+      // SMGs are reserved for the Final Boss and Owner Mode; never grant one from a world pickup.
+      powerUps.splice(index, 1);
+      return;
     } else {
       if (side === 'left') leftShotgun = Math.min(2, leftShotgun + 1);
       else rightShotgun = Math.min(2, rightShotgun + 1);
@@ -3728,8 +3729,8 @@ function tickFlappy() {
   const ownerGiveLeft = document.getElementById('ownerGiveSMGLeft');
   const ownerGiveRight = document.getElementById('ownerGiveSMGRight');
   function refreshOwnerSMGButtons() { const l = document.getElementById('ownerGiveSMGLeft'); const r = document.getElementById('ownerGiveSMGRight'); if (l) l.hidden = !ownerMode; if (r) r.hidden = !ownerMode; }
-  if (ownerGiveLeft) ownerGiveLeft.addEventListener('click', () => { leftSMG = 12; ui.status.textContent = 'OWNER MODE: SMG granted — 12 rounds!'; });
-  if (ownerGiveRight) ownerGiveRight.addEventListener('click', () => { rightSMG = 12; ui.status.textContent = 'OWNER MODE: SMG granted — 12 rounds!'; });
+  if (ownerGiveLeft) ownerGiveLeft.addEventListener('click', () => { if (!ownerMode) return; leftSMG = 12; ui.status.textContent = 'OWNER MODE: SMG granted — 12 rounds!'; });
+  if (ownerGiveRight) ownerGiveRight.addEventListener('click', () => { if (!ownerMode) return; rightSMG = 12; ui.status.textContent = 'OWNER MODE: SMG granted — 12 rounds!'; });
   refreshOwnerSMGButtons();
   function refreshTouchControls() {
     touchLeft.style.display = (mode === 'online' && onlineRole === 'player_two') ? 'none' : '';
